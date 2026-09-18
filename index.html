@@ -1660,10 +1660,45 @@
         if(!this.files[0]) return;
         const r=new FileReader();
         r.onload=e=>{
-            try{ D=JSON.parse(e.target.result); save(); renderAll(); toast("Importazione completata ✓"); }
-            catch(err){ toast("File non valido"); }
+            try{
+                const raw=JSON.parse(e.target.result);
+                // Accetta entrambi i formati (vecchio ceramic_app_mobile_v1 e nuovo)
+                // Normalizza le chiavi mancanti
+                const imported = {
+                    ovens: raw.ovens || [],
+                    argille: raw.argille || [],
+                    colori_smalti: raw.colori_smalti || [],
+                    cristalline: raw.cristalline || [],
+                    attrezzature_costi: raw.attrezzature_costi || [],
+                    firings: raw.firings || [],
+                    sales: raw.sales || [],
+                    scraps: raw.scraps || [],
+                    ceramics: (raw.ceramics || []).map(c => ({
+                        ...c,
+                        // Compatibilità vecchio formato: fire1Id/fire2Id
+                        fire1Id: c.fire1Id || c.fire1Lot || "",
+                        fire2Id: c.fire2Id || c.fire2Lot || "",
+                        glazeIds: c.glazeIds || [],
+                        multiplier: c.multiplier || 3.5,
+                        subgroups: (c.subgroups || []).map(sg => ({
+                            type: sg.type || "Pezzo",
+                            quantity: sg.quantity || 0,
+                            soldQuantity: sg.soldQuantity || 0,
+                            scrappedQuantity: sg.scrappedQuantity || 0,
+                            unitWeight: sg.unitWeight || 0,
+                            unitPrice: sg.unitPrice || 0
+                        }))
+                    }))
+                };
+                // Verifica minima struttura
+                if(!Array.isArray(imported.ceramics)) throw new Error("Struttura non valida");
+                D = imported;
+                save(); renderAll(); toast("Importazione completata ✓");
+            }
+            catch(err){ toast("⚠ File non valido: " + err.message); }
         };
         r.readAsText(this.files[0]);
+        this.value=""; // reset per permettere reimportazione stesso file
     });
 
     // ── UTILITY ──────────────────────────────────────
