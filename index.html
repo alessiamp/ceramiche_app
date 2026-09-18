@@ -1,1341 +1,1879 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Le mie ceramiche — Laboratorio Pro Master Definitivo</title>
- <style>
- :root {
- --bg-color: #f4f0ec;
- --card-bg: #ffffff;
- --text-main: #2b2421;
- --text-muted: #786d65;
- --primary: #9e5338;
- --primary-hover: #83432b;
- --primary-light: #f5ebe6;
- --accent: #c8956c;
- --border: #e4ded7;
- --border-focus: #9e5338;
- --danger: #b33928;
- --danger-hover: #912c1e;
- --success: #3f6e4f;
- --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
- --radius: 14px;
- --radius-sm: 8px;
- --shadow: 0 6px 20px rgba(43, 36, 33, 0.04);
- --transition: all 0.2s ease-in-out;
- }
- * { box-sizing: border-box; margin: 0; padding: 0; }
- body { font-family: var(--font-main); background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; }
- header { background-color: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1.15rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
- h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.03em; display: flex; align-items: center; gap: 0.5rem; }
- h1::before { content: "🏺"; font-size: 1.2rem; }
- nav { display: flex; gap: 0.35rem; background: var(--bg-color); padding: 0.25rem; border-radius: var(--radius); }
- nav button { background: transparent; border: none; padding: 0.5rem 1rem; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); cursor: pointer; border-radius: var(--radius-sm); transition: var(--transition); }
- nav button:hover { color: var(--text-main); }
- nav button.active { color: var(--primary); background: var(--card-bg); box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-weight: 600; }
- main { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem; }
- .view-section { display: none; }
- .view-section.active { display: block; animation: fadeIn 0.25s ease; }
- @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
- .btn { background-color: var(--primary); color: white; border: none; padding: 0.65rem 1.25rem; font-size: 0.95rem; font-weight: 500; border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(158, 83, 56, 0.2); }
- .btn:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
- .btn-secondary { background-color: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); box-shadow: none; }
- .btn-secondary:hover { background-color: var(--bg-color); border-color: var(--text-muted); transform: none; }
- .btn-danger { background-color: var(--danger); box-shadow: 0 2px 4px rgba(179, 57, 40, 0.2); }
- .btn-danger:hover { background-color: var(--danger-hover); transform: translateY(-1px); }
- .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px; }
- .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem; }
- .stat-card { background: var(--card-bg); border: 1px solid var(--border); padding: 1.35rem; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; }
- .stat-card .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; font-weight: 700; }
- .stat-card .value { font-size: 1.75rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.02em; }
- .stat-card .subtext { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; }
- .filters-container { background: var(--card-bg); border: 1px solid var(--border); padding: 1.25rem; border-radius: var(--radius); margin-bottom: 1.5rem; box-shadow: var(--shadow); }
- .filters-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 0.85rem; }
- .filters-row:last-child { margin-bottom: 0; }
- .search-box { flex: 1; min-width: 240px; }
- .search-box input, .filter-group select { width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; background: var(--card-bg); color: var(--text-main); }
- .filter-group { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 130px; }
- .filter-group label { font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
- .batch-toolbar { background: var(--text-main); color: white; padding: 0.85rem 1.5rem; border-radius: var(--radius); margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; }
- .batch-toolbar.hidden { display: none; }
- .batch-actions { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
- .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; margin-bottom: 2rem; }
- table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; white-space: nowrap; }
- th, td { padding: 1rem 1.15rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
- th { background-color: #faf7f2; font-weight: 700; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
- tr:last-child td { border-bottom: none; }
- tbody tr:hover { background-color: #fbf9f6; }
- .actions-cell { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
- .mobile-cards-container { display: none; gap: 1rem; flex-direction: column; margin-bottom: 2rem; }
- .mobile-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 0.75rem; }
- .mobile-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
- .mobile-card-body { font-size: 0.85rem; color: var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
- .mobile-card-footer { display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.25rem; }
- @media (max-width: 900px) { .table-container { display: none; } .mobile-cards-container { display: flex; } }
- .progress-steps { display: flex; gap: 4px; margin-top: 0.4rem; align-items: center; }
- .progress-step { height: 6px; flex: 1; background: var(--border); border-radius: 3px; transition: var(--transition); }
- .progress-step.active { background: var(--primary); }
- .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.7rem; font-size: 0.72rem; font-weight: 700; border-radius: 20px; }
- .badge-in-lavorazione { background: #fef3c7; color: #854d0e; }
- .badge-da-cuocere { background: #e0e7ff; color: #3730a3; }
- .badge-finita { background: #d1fae5; color: #065f46; }
- .badge-venduta { background: #e6fffa; color: #115e59; }
- .badge-scartata { background: #fee2e2; color: #991b1b; }
- input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--primary); cursor: pointer; border-radius: 4px; }
- .expand-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--primary); font-weight: bold; width: 24px; height: 24px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; transition: var(--transition); }
- .expand-btn:hover { background: var(--primary-light); }
- .subgroups-dropdown-row { background: #faf7f2 !important; display: none; }
- .subgroups-dropdown-row.open { display: table-row; }
- .subgroups-inner-table { width: 95%; margin: 0.5rem auto 1rem auto; background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; }
- .subgroups-inner-table th { background: #f4f0ec; padding: 0.5rem 0.75rem; font-size: 0.7rem; }
- .subgroups-inner-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
- .color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); margin-right: 6px; vertical-align: middle; }
- .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 36, 33, 0.5); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; padding: 1rem; }
- .modal-overlay.open { opacity: 1; pointer-events: auto; }
- .modal { background: var(--card-bg); width: 100%; max-width: 950px; max-height: 90vh; border-radius: var(--radius); box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; }
- .modal-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #faf7f2; }
- .modal-header h2 { font-size: 1.15rem; font-weight: 700; }
- .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
- .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
- .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem; background: #faf7f2; }
- .form-section { margin-bottom: 1.25rem; background: var(--bg-color); padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); }
- .form-section h3 { font-size: 0.85rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary); text-transform: uppercase; }
- .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
- .form-group { display: flex; flex-direction: column; gap: 0.35rem; position: relative; }
- .form-group.full-width { grid-column: 1 / -1; }
- .form-group label { font-size: 0.81rem; font-weight: 600; }
- .form-group input, .form-group select, .form-group textarea { padding: 0.65rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.9rem; background: white; color: var(--text-main); }
- .error-message { font-size: 0.75rem; color: var(--danger); margin-top: 0.2rem; display: none; }
- .form-group.has-error input { border-color: var(--danger); }
- .form-group.has-error .error-message { display: block; }
- .subgroups-container { background: white; border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius-sm); margin-top: 0.5rem; }
- .subgroup-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
- .subgroup-header-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.3rem; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
- .multi-checkbox-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.5rem; max-height: 180px; overflow-y: auto; background: white; border: 1px solid var(--border); padding: 0.75rem; border-radius: var(--radius-sm); }
- .multi-checkbox-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
- .settings-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
- .settings-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); }
- .sub-table { width: 100%; margin-top: 1rem; font-size: 0.85rem; }
- .sub-table th, .sub-table td { padding: 0.65rem; }
- .img-preview-box { width: 80px; height: 80px; border: 2px dashed var(--border); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; overflow: hidden; background: white; cursor: pointer; position: relative; }
- .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
- .img-preview-box span { font-size: 0.7rem; color: var(--text-muted); text-align: center; padding: 0.2rem; }
- .kiln-suggestion-banner { background: #e0e7ff; border: 1px solid #c7d2fe; color: #3730a3; padding: 1rem 1.25rem; border-radius: var(--radius); margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
- .kiln-suggestion-banner.hidden { display: none; }
- </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Le mie ceramiche</title>
+    <style>
+        :root {
+            --clay: #8B5E3C;
+            --clay-dark: #6B4429;
+            --clay-mid: #A8714D;
+            --clay-light: #F0E8DF;
+            --clay-pale: #FAF6F2;
+            --dust: #E8DDD4;
+            --stone: #C4B5A8;
+            --ink: #1C1410;
+            --ink-mid: #4A3728;
+            --ink-muted: #8C7264;
+            --white: #FFFFFF;
+            --success: #3A6B4A;
+            --success-bg: #E8F2EB;
+            --danger: #9B2B1A;
+            --danger-bg: #FDECEA;
+            --warning-bg: #FEF7E6;
+            --warning: #8A6100;
+            --blue: #2C4E7A;
+            --blue-bg: #EAF0F8;
+            --radius: 14px;
+            --radius-sm: 8px;
+            --radius-xs: 5px;
+            --shadow: 0 2px 12px rgba(28,20,16,0.08);
+            --shadow-sm: 0 1px 4px rgba(28,20,16,0.06);
+            --tab-h: 68px;
+            --header-h: 56px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            background: var(--clay-pale);
+            color: var(--ink);
+            line-height: 1.5;
+            font-size: 15px;
+            overscroll-behavior: none;
+        }
+
+        /* ── HEADER ─────────────────────────────────── */
+        .app-header {
+            height: var(--header-h);
+            background: var(--white);
+            border-bottom: 1px solid var(--dust);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 200;
+        }
+        .app-header h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--clay-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .header-action-btn {
+            background: var(--clay);
+            color: white;
+            border: none;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+
+        /* ── TAB BAR INFERIORE ───────────────────────── */
+        .tab-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: var(--tab-h);
+            background: var(--white);
+            border-top: 1px solid var(--dust);
+            display: flex;
+            z-index: 200;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--ink-muted);
+            font-size: 0.62rem;
+            font-weight: 500;
+            padding: 0.4rem 0;
+            transition: color 0.15s;
+        }
+        .tab-btn .tab-icon { font-size: 1.3rem; line-height: 1; }
+        .tab-btn.active { color: var(--clay); }
+        .tab-btn.active .tab-icon { transform: scale(1.1); }
+
+        /* ── CONTENUTO PRINCIPALE ────────────────────── */
+        .app-content {
+            margin-top: var(--header-h);
+            margin-bottom: var(--tab-h);
+            min-height: calc(100dvh - var(--header-h) - var(--tab-h));
+        }
+
+        .view-section { display: none; padding: 1rem; padding-bottom: 1.5rem; }
+        .view-section.active { display: block; }
+
+        /* ── DASHBOARD ───────────────────────────────── */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 0.9rem 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-card.full { grid-column: 1 / -1; }
+        .stat-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.25rem;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--clay-dark);
+            line-height: 1.1;
+        }
+        .stat-value.green { color: var(--success); }
+        .stat-sub {
+            font-size: 0.72rem;
+            color: var(--ink-muted);
+            margin-top: 0.15rem;
+        }
+
+        /* ── BANNER AVVISI ───────────────────────────── */
+        .alert-banner {
+            background: var(--blue-bg);
+            border: 1px solid #C0D0E8;
+            color: var(--blue);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .alert-banner.hidden { display: none; }
+        .alert-banner .btn-mini {
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* ── SEARCH E FILTRI ─────────────────────────── */
+        .search-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--dust);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            background: var(--white);
+            color: var(--ink);
+        }
+        .search-input:focus { border-color: var(--clay); outline: none; }
+        .filter-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+        .filter-row::-webkit-scrollbar { display: none; }
+        .filter-chip {
+            flex-shrink: 0;
+            padding: 0.45rem 0.85rem;
+            border: 1.5px solid var(--dust);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--ink-mid);
+            background: var(--white);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+        .filter-chip.active {
+            background: var(--clay);
+            border-color: var(--clay);
+            color: white;
+        }
+        .filter-select {
+            padding: 0.45rem 0.75rem;
+            border: 1.5px solid var(--dust);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--ink-mid);
+            background: var(--white);
+            cursor: pointer;
+        }
+
+        /* ── CARD LOTTI ──────────────────────────────── */
+        .lots-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+        .lot-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            cursor: pointer;
+            transition: box-shadow 0.15s;
+            -webkit-user-select: none;
+        }
+        .lot-card:active { box-shadow: var(--shadow); }
+
+        .lot-card-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.9rem;
+        }
+        .lot-thumb {
+            width: 56px; height: 56px;
+            border-radius: var(--radius-sm);
+            background: var(--clay-light);
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+            overflow: hidden;
+        }
+        .lot-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .lot-info { flex: 1; min-width: 0; }
+        .lot-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--ink);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 0.2rem;
+        }
+        .lot-meta {
+            font-size: 0.77rem;
+            color: var(--ink-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .lot-price-row {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.2rem;
+            flex-shrink: 0;
+        }
+        .lot-price-label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: right;
+        }
+        .lot-price {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--ink);
+            text-align: right;
+        }
+        .lot-pieces {
+            font-size: 0.72rem;
+            color: var(--ink-muted);
+            text-align: right;
+        }
+
+        .lot-card-footer {
+            padding: 0 0.9rem 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .lot-progress {
+            display: flex; gap: 3px; flex: 1; max-width: 120px;
+        }
+        .lot-progress-seg {
+            height: 4px; flex: 1; background: var(--dust); border-radius: 2px;
+        }
+        .lot-progress-seg.sold { background: var(--success); }
+        .lot-progress-seg.active { background: var(--clay); }
+
+        .lot-expanded {
+            border-top: 1px solid var(--clay-light);
+            padding: 0.75rem 0.9rem;
+            display: none;
+            background: var(--clay-pale);
+        }
+        .lot-expanded.open { display: block; }
+        .lot-expanded-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+        .sg-pill-list { display: flex; flex-direction: column; gap: 0.35rem; }
+        .sg-pill {
+            background: var(--white);
+            border: 1px solid var(--dust);
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.7rem;
+            font-size: 0.78rem;
+            color: var(--ink-mid);
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.1rem;
+        }
+        .lot-actions-row {
+            display: flex; gap: 0.5rem; margin-top: 0.75rem;
+        }
+
+        /* ── BADGE ───────────────────────────────────── */
+        .badge {
+            display: inline-flex; align-items: center;
+            padding: 0.2rem 0.55rem;
+            font-size: 0.68rem; font-weight: 700;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .badge-In.lavorazione { background: var(--warning-bg); color: var(--warning); }
+        .badge-Da.cuocere { background: var(--blue-bg); color: var(--blue); }
+        .badge-Finita { background: var(--success-bg); color: var(--success); }
+        .badge-Venduta { background: #E8F5F0; color: #0E6655; }
+        .badge-Scartata { background: var(--danger-bg); color: var(--danger); }
+
+        /* ── BOTTONI ─────────────────────────────────── */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.35rem;
+            padding: 0.8rem 1.15rem;
+            font-size: 0.9rem; font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: none; cursor: pointer;
+            transition: opacity 0.15s;
+            background: var(--clay);
+            color: white;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn.full { width: 100%; }
+        .btn-sm { padding: 0.5rem 0.85rem; font-size: 0.8rem; border-radius: var(--radius-xs); }
+        .btn-ghost {
+            background: transparent;
+            color: var(--clay);
+            border: 1.5px solid var(--clay);
+        }
+        .btn-subtle {
+            background: var(--clay-light);
+            color: var(--clay-dark);
+        }
+        .btn-danger { background: var(--danger); }
+        .btn-neutral { background: var(--dust); color: var(--ink-mid); }
+
+        /* ── MODALI ──────────────────────────────────── */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(28,20,16,0.55);
+            backdrop-filter: blur(2px);
+            z-index: 500;
+            display: flex; align-items: flex-end;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .modal-sheet {
+            width: 100%;
+            max-height: 95dvh;
+            background: var(--white);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transform: translateY(100%);
+            transition: transform 0.25s cubic-bezier(0.32,0.72,0,1);
+        }
+        .modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+        .modal-handle {
+            width: 36px; height: 4px;
+            background: var(--dust);
+            border-radius: 2px;
+            margin: 0.6rem auto 0;
+            flex-shrink: 0;
+        }
+        .modal-header {
+            padding: 0.75rem 1rem 0.75rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--dust);
+            flex-shrink: 0;
+        }
+        .modal-header h2 { font-size: 1rem; font-weight: 700; }
+        .modal-close {
+            background: var(--clay-light); border: none;
+            width: 30px; height: 30px; border-radius: 50%;
+            font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--clay-dark);
+        }
+        .modal-body { flex: 1; overflow-y: auto; padding: 1rem; -webkit-overflow-scrolling: touch; }
+        .modal-footer {
+            padding: 0.85rem 1rem;
+            border-top: 1px solid var(--dust);
+            display: flex; gap: 0.6rem;
+            flex-shrink: 0;
+            padding-bottom: calc(0.85rem + env(safe-area-inset-bottom));
+        }
+        .modal-footer .btn { flex: 1; }
+
+        /* ── FORM ────────────────────────────────────── */
+        .form-section {
+            margin-bottom: 1rem;
+            background: var(--clay-pale);
+            border: 1px solid var(--dust);
+            border-radius: var(--radius);
+            padding: 0.9rem;
+        }
+        .form-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--clay);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+        .form-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+        .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+
+        .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+        .form-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--ink-mid);
+        }
+        .form-control {
+            padding: 0.8rem 0.9rem;
+            border: 1.5px solid var(--dust);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            background: var(--white);
+            color: var(--ink);
+            width: 100%;
+        }
+        .form-control:focus { border-color: var(--clay); outline: none; }
+        textarea.form-control { min-height: 80px; resize: vertical; }
+
+        .photo-btn {
+            width: 72px; height: 72px;
+            border: 2px dashed var(--dust);
+            border-radius: var(--radius-sm);
+            background: var(--white);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 3px;
+            cursor: pointer;
+            font-size: 0.6rem; color: var(--ink-muted);
+            overflow: hidden;
+        }
+        .photo-btn img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-btn .photo-icon { font-size: 1.4rem; }
+
+        /* Sottogruppi */
+        .sg-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+        .sg-row {
+            background: var(--white);
+            border: 1px solid var(--dust);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem 0.75rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 28px;
+            gap: 0.4rem;
+            align-items: center;
+        }
+        .sg-row input {
+            padding: 0.5rem 0.5rem;
+            border: 1px solid var(--dust);
+            border-radius: var(--radius-xs);
+            font-size: 0.82rem;
+            background: var(--clay-pale);
+            color: var(--ink);
+            width: 100%;
+            text-align: center;
+        }
+        .sg-row input:first-child { text-align: left; }
+        .sg-row input:focus { outline: none; border-color: var(--clay); background: white; }
+        .sg-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 28px;
+            gap: 0.4rem;
+            padding: 0 0.75rem;
+            margin-bottom: 0.15rem;
+        }
+        .sg-header span {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--ink-muted);
+            text-align: center;
+        }
+        .sg-header span:first-child { text-align: left; }
+        .sg-del-btn {
+            background: var(--danger-bg);
+            border: none;
+            color: var(--danger);
+            width: 28px; height: 28px;
+            border-radius: var(--radius-xs);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Smalti multi-check */
+        .glaze-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            max-height: 150px;
+            overflow-y: auto;
+            background: var(--white);
+            border: 1px solid var(--dust);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem;
+        }
+        .glaze-item {
+            display: flex; align-items: center; gap: 0.4rem;
+            font-size: 0.8rem;
+            padding: 0.25rem;
+            cursor: pointer;
+        }
+        .glaze-item input { width: 1.1rem; height: 1.1rem; accent-color: var(--clay); cursor: pointer; }
+        .color-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+
+        /* Selezione multipla */
+        .multiplier-row {
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .multiplier-label {
+            font-size: 0.8rem; color: var(--ink-muted); flex: 1;
+        }
+        .multiplier-input {
+            width: 70px;
+            padding: 0.4rem 0.5rem;
+            border: 1.5px solid var(--dust);
+            border-radius: var(--radius-xs);
+            font-size: 0.9rem; font-weight: 600;
+            text-align: center;
+            background: var(--white);
+            color: var(--ink);
+        }
+        .multiplier-input:focus { outline: none; border-color: var(--clay); }
+
+        /* ── LISTE VENDITE / SCARTI / COTTURE ─────────── */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .section-title { font-size: 1rem; font-weight: 700; }
+
+        .entry-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .entry-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 0.85rem 1rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .entry-card-info { flex: 1; min-width: 0; }
+        .entry-main { font-weight: 600; font-size: 0.9rem; }
+        .entry-meta { font-size: 0.75rem; color: var(--ink-muted); margin-top: 0.15rem; }
+        .entry-value { font-size: 1rem; font-weight: 700; text-align: right; flex-shrink: 0; }
+        .entry-value.green { color: var(--success); }
+        .entry-value.red { color: var(--danger); }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--ink-muted);
+        }
+        .empty-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .empty-label { font-size: 0.85rem; }
+
+        /* ── IMPOSTAZIONI ────────────────────────────── */
+        .settings-section {
+            background: var(--white);
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .settings-section-title {
+            padding: 0.85rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--ink-mid);
+            border-bottom: 1px solid var(--clay-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .settings-row {
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--clay-light);
+            font-size: 0.88rem;
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-name { font-weight: 500; }
+        .settings-row-value { color: var(--ink-muted); font-size: 0.82rem; }
+
+        .backup-btns { display: flex; gap: 0.6rem; padding: 0.85rem 1rem; }
+        .backup-btns .btn { flex: 1; }
+
+        /* ── TOAST ───────────────────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: calc(var(--tab-h) + 0.75rem);
+            left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--ink);
+            color: white;
+            padding: 0.65rem 1.25rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 1000;
+            transition: opacity 0.2s, transform 0.2s;
+            white-space: nowrap;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>Le mie ceramiche</h1>
-    <nav>
-      <button class="nav-btn active" data-target="ceramics-view">Lotti / Ceramiche</button>
-      <button class="nav-btn" data-target="firings-view">Cotture</button>
-      <button class="nav-btn" data-target="scraps-view">Rotture & Scarti</button>
-      <button class="nav-btn" data-target="settings-view">Impostazioni</button>
-    </nav>
-  </header>
-  
-  <main>
-    <!-- CERAMICS VIEW -->
-    <section id="ceramics-view" class="view-section active">
-      <div class="kiln-suggestion-banner hidden" id="kiln-suggestion-banner">
-        <div>🔥 <strong>Attenzione!</strong> Ci sono <span id="pieces-waiting-count">0</span> pezzi nello stato "Da cuocere" in attesa di forno.</div>
-        <button class="btn btn-sm" style="background: #3730a3;" id="btn-create-kiln-from-banner">+ Crea cottura rapida</button>
-      </div>
-      
-      <div class="dashboard-grid">
-        <div class="stat-card">
-          <div class="label">Lotti / Gruppi</div>
-          <div class="value" id="dash-total">0</div>
-          <div class="subtext">Totale pezzi stimati: <span id="dash-total-pieces">0</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Da Cuocere</div>
-          <div class="value" id="dash-to-fire">0</div>
-          <div class="subtext">Lotti in attesa di forno</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Margine & Costo Medio</div>
-          <div class="value" id="dash-avg-margin">0%</div>
-          <div class="subtext">Costo medio/pz: <span id="dash-avg-unit-cost">€0,00</span></div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Valore & Incasso</div>
-          <div class="value" id="dash-potential-value">€0,00</div>
-          <div class="subtext">Incassato reale: <span id="dash-total-sales">€0,00</span></div>
-        </div>
-      </div>
-      
-      <div class="filters-container">
-        <div class="filters-row">
-          <div class="search-box">
-            <input type="text" id="filter-search" placeholder="Cerca per nome lotto, argilla...">
-          </div>
-          <button class="btn" id="btn-new-ceramic">+ Nuovo Lotto / Gruppo</button>
-          <button class="btn btn-secondary" id="btn-new-scrap">+ Registra Scarto</button>
-        </div>
-        <div class="filters-row">
-          <div class="filter-group">
-            <label>Stato</label>
-            <select id="filter-status">
-              <option value="">Tutti</option>
-              <option value="In lavorazione">In lavorazione</option>
-              <option value="Da cuocere">Da cuocere</option>
-              <option value="Finita">Finita</option>
-              <option value="Venduta">Venduta</option>
-              <option value="Scartata">Scartata</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>Argilla</label>
-            <select id="filter-clay">
-              <option value="">Tutte</option>
-            </select>
-          </div>
-          <div class="filter-group" style="justify-content: flex-end; flex: 0 0 auto;">
-            <button class="btn btn-secondary btn-sm" id="btn-reset-filters" style="margin-top: 1.15rem;">Reset</button>
-          </div>
-        </div>
-      </div>
-      
-      <div class="batch-toolbar hidden" id="batch-toolbar">
-        <div style="font-size: 0.9rem; font-weight: 500;">
-          <span id="selected-count">0</span> elementi selezionati
-        </div>
-        <div class="batch-actions">
-          <button class="btn btn-secondary btn-sm" style="color: white; border-color: rgba(255,255,255,0.3); background: transparent;" id="btn-batch-status">Cambia Stato</button>
-          <button class="btn btn-danger btn-sm" id="btn-batch-delete">Elimina</button>
-        </div>
-      </div>
-      
-      <!-- DESKTOP TABLE -->
-      <div class="table-container">
-        <table id="ceramics-table">
-          <thead>
-            <tr>
-              <th style="width: 30px;"></th>
-              <th style="width: 40px;"><input type="checkbox" id="select-all-checkbox"></th>
-              <th>Foto</th>
-              <th>Nome Lotto</th>
-              <th>Pezzi (Residui/Tot)</th>
-              <th>Stato & Workflow</th>
-              <th>Argilla & Smalti</th>
-              <th>Cotture</th>
-              <th>Costo Tot.</th>
-              <th>Prezzo Cons.</th>
-              <th style="text-align: right;">Azioni</th>
-            </tr>
-          </thead>
-          <tbody id="ceramics-tbody"></tbody>
-        </table>
-      </div>
-      
-      <!-- MOBILE CARDS CONTAINER -->
-      <div class="mobile-cards-container" id="mobile-cards-container"></div>
-    </section>
-    
-    <!-- FIRINGS VIEW -->
-    <section id="firings-view" class="view-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h2>Storico Cotture & Costi Forno</h2>
-        <button class="btn" id="btn-new-firing">+ Nuova cottura</button>
-      </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Data</th>
-              <th>Forno</th>
-              <th>Tipo</th>
-              <th>Costo totale</th>
-              <th style="text-align: right;">Azioni</th>
-            </tr>
-          </thead>
-          <tbody id="firings-tbody"></tbody>
-        </table>
-      </div>
-    </section>
 
-    <!-- SCRAPS VIEW -->
-    <section id="scraps-view" class="view-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h2>Rotture & Scarti di Laboratorio</h2>
-        <button class="btn" id="btn-new-scrap-tab">+ Registra Scarto</button>
-      </div>
-      <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
-        <div class="stat-card">
-          <div class="label">Pezzi Scartati Totali</div>
-          <div class="value" id="dash-total-scraps">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Costo Perso in Scarti</div>
-          <div class="value" id="dash-total-scraps-cost">€0,00</div>
-        </div>
-      </div>
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Lotto / Origine</th>
-              <th>Fase di Scarto</th>
-              <th>Quantità</th>
-              <th>Costo Stimato Perso</th>
-              <th style="text-align: right;">Azioni</th>
-            </tr>
-          </thead>
-          <tbody id="scraps-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-    
-    <!-- SETTINGS VIEW -->
-    <section id="settings-view" class="view-section">
-      <h2 style="margin-bottom: 1.25rem;">Impostazioni & Listino Prezzi</h2>
-      <div class="settings-grid">
-        <div class="settings-card">
-          <h3>Forni e Costi Automatici</h3>
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Definisci i costi di consumo energetico per ogni tipo di cottura del forno.</p>
-          <table class="sub-table" id="settings-oven-table">
-            <thead><tr><th>Nome Forno</th><th>Bassa Temp. (€)</th><th>Alta Temp. (€)</th><th style="text-align: right;">Azioni</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="settings-card">
-          <h3>Argille <button class="btn btn-sm" id="btn-add-clay">+ Aggiungi</button></h3>
-          <table class="sub-table" id="settings-clay-table">
-            <thead><tr><th>Nome</th><th>Formato (kg)</th><th>Prezzo (€)</th><th style="text-align: right;">Azioni</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="settings-card">
-          <h3>Colori e Smalti <button class="btn btn-sm" id="btn-add-glaze">+ Aggiungi</button></h3>
-          <table class="sub-table" id="settings-glaze-table">
-            <thead><tr><th>Colore</th><th>Nome</th><th>Prezzo (€)</th><th style="text-align: right;">Azioni</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="settings-card">
-          <h3>Cristalline <button class="btn btn-sm" id="btn-add-crystal">+ Aggiungi</button></h3>
-          <table class="sub-table" id="settings-crystal-table">
-            <thead><tr><th>Colore</th><th>Nome</th><th>Prezzo (€)</th><th style="text-align: right;">Azioni</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="settings-card">
-          <h3>Attrezzature e Costi <button class="btn btn-sm" id="btn-add-equipment">+ Aggiungi</button></h3>
-          <table class="sub-table" id="settings-equipment-table">
-            <thead><tr><th>Nome Attrezzatura</th><th>Prezzo (€)</th><th>Quantità</th><th style="text-align: right;">Azioni</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="settings-card">
-          <h3>Backup e Dati</h3>
-          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem;">
-            <button class="btn btn-sm" id="btn-export">Esporta JSON</button>
-            <button class="btn btn-secondary btn-sm" id="btn-import">Importa JSON</button>
-            <input type="file" id="import-file-input" accept=".json" style="display: none;">
-            <button class="btn btn-danger btn-sm" id="btn-reset-demo">Ripristina dati iniziali</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-  
-  <!-- MODAL FORM LOTTO / CERAMICA -->
-  <div class="modal-overlay" id="ceramic-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="ceramic-modal-title">Nuovo Lotto / Gruppo</h2>
-        <button class="close-btn" id="close-ceramic-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="ceramic-form">
-          <input type="hidden" id="ceramic-id">
-          <div class="form-section">
-            <h3>Informazioni Generali</h3>
-            <div class="form-grid">
-              <div class="form-group" id="group-form-name">
-                <label>Nome Lotto *</label>
-                <input type="text" id="form-name" placeholder="Es. Collezione Misto">
-                <span class="error-message">Inserisci un nome valido.</span>
-              </div>
-              <div class="form-group">
-                <label>Data *</label>
-                <input type="date" id="form-creation-date">
-              </div>
-              <div class="form-group">
-                <label>Stato *</label>
-                <select id="form-status">
-                  <option value="In lavorazione">In lavorazione</option>
-                  <option value="Da cuocere">Da cuocere</option>
-                  <option value="Finita">Finita</option>
-                  <option value="Venduta">Venduta</option>
-                  <option value="Scartata">Scartata</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Foto del Lotto</label>
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                  <div class="img-preview-box" id="img-preview-box" onclick="document.getElementById('form-photo-file').click()">
-                    <span id="img-placeholder-text">Carica foto</span>
-                    <img id="form-photo-img" style="display: none;">
-                  </div>
-                  <input type="file" id="form-photo-file" accept="image/*" style="display: none;" onchange="handlePhotoUpload(this)">
-                  <input type="hidden" id="form-photo-url">
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="clearPhoto()">Rimuovi</button>
+    <!-- HEADER -->
+    <header class="app-header">
+        <h1>🏺 Le mie ceramiche</h1>
+        <button class="header-action-btn" id="btn-header-add" title="Nuovo lotto">+</button>
+    </header>
+
+    <!-- CONTENUTO -->
+    <main class="app-content">
+
+        <!-- LOTTI -->
+        <section id="view-lots" class="view-section active">
+            <div class="dash-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Lotti</div>
+                    <div class="stat-value" id="ds-lots">0</div>
+                    <div class="stat-sub"><span id="ds-pieces">0</span> pezzi totali</div>
                 </div>
-              </div>
-              <div class="form-group full-width"><label>Note</label><textarea id="form-notes" placeholder="Note sul lotto..."></textarea></div>
+                <div class="stat-card">
+                    <div class="stat-label">Costo</div>
+                    <div class="stat-value" id="ds-cost">€0</div>
+                    <div class="stat-sub">medio/pz: <span id="ds-unit-cost">€0</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Potenziale</div>
+                    <div class="stat-value" id="ds-potential">€0</div>
+                    <div class="stat-sub">margine: <span id="ds-margin">0%</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Incassato</div>
+                    <div class="stat-value green" id="ds-sales">€0</div>
+                    <div class="stat-sub">vendite</div>
+                </div>
             </div>
-          </div>
-          
-          <div class="form-section">
-            <h3>Sottogruppi / Pezzi</h3>
-            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
-              <div class="form-group" style="flex: 0 0 200px;">
-                <label>Moltiplicatore Prezzo (Etsy)</label>
-                <input type="number" id="form-multiplier" value="3.5" min="1" step="0.5" oninput="recalcAllSubgroupsPricing()">
-              </div>
+
+            <div class="alert-banner hidden" id="kiln-banner">
+                <span>🔥 <strong id="kiln-count">0</strong> pezzi pronti per il forno</span>
+                <button class="btn-mini" id="btn-quick-firing">+ Cottura rapida</button>
             </div>
-            
-            <div class="subgroup-header-row">
-              <span>Tipo Oggetto</span>
-              <span>Q.tà</span>
-              <span>Venduti</span>
-              <span>Peso un. (g)</span>
-              <span>Costo un. (€)</span>
-              <span>Prezzo Cons./Un. (€)</span>
-              <span></span>
+
+            <div class="search-row">
+                <input type="text" class="search-input" id="search-input" placeholder="🔍  Cerca lotto…">
             </div>
-            <div class="subgroups-container" id="subgroups-list-container"></div>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-subgroup" style="margin-top: 0.75rem;">+ Aggiungi riga sottogruppo</button>
-          </div>
-          
-          <div class="form-section">
-            <h3>Materiali e Doppia Cottura</h3>
-            <div class="form-grid">
-              <div class="form-group"><label>Argilla principale</label><select id="form-clay" onchange="recalcAllSubgroupsPricing()"><option value="">Nessuna</option></select></div>
-              <div class="form-group full-width">
-                <label>Colori, Smalti e Cristalline usati</label>
-                <div class="multi-checkbox-container" id="form-glazes-container"></div>
-              </div>
-              <div class="form-group">
-                <label>1ª Cottura (es. Biscottatura)</label>
-                <select id="form-fire1-lot" onchange="recalcAllSubgroupsPricing()"><option value="">Nessuna</option></select>
-              </div>
-              <div class="form-group">
-                <label>2ª Cottura (es. Alta Temp. / Smalto)</label>
-                <select id="form-fire2-lot" onchange="recalcAllSubgroupsPricing()"><option value="">Nessuna</option></select>
-              </div>
+            <div class="filter-row" id="status-chips">
+                <span class="filter-chip active" data-status="">Tutti</span>
+                <span class="filter-chip" data-status="In lavorazione">In lav.</span>
+                <span class="filter-chip" data-status="Da cuocere">Da cuocere</span>
+                <span class="filter-chip" data-status="Finita">Finita</span>
+                <span class="filter-chip" data-status="Venduta">Venduta</span>
+                <span class="filter-chip" data-status="Scartata">Scartata</span>
+                <select class="filter-select" id="clay-filter"><option value="">Tutte le argille</option></select>
             </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" id="close-ceramic-modal-btn">Annulla</button>
-        <button class="btn btn-sm" id="save-ceramic-btn">Salva Lotto</button>
-      </div>
+
+            <div class="lots-list" id="lots-list"></div>
+        </section>
+
+        <!-- VENDITE -->
+        <section id="view-sales" class="view-section">
+            <div class="section-header">
+                <span class="section-title">Vendite</span>
+                <button class="btn btn-sm" id="btn-new-sale">+ Registra</button>
+            </div>
+            <div class="entry-list" id="sales-list"></div>
+        </section>
+
+        <!-- SCARTI -->
+        <section id="view-scraps" class="view-section">
+            <div class="section-header">
+                <span class="section-title">Rotture & Scarti</span>
+                <button class="btn btn-sm" id="btn-new-scrap">+ Registra</button>
+            </div>
+            <div class="entry-list" id="scraps-list"></div>
+        </section>
+
+        <!-- COTTURE -->
+        <section id="view-firings" class="view-section">
+            <div class="section-header">
+                <span class="section-title">Cotture Forno</span>
+                <button class="btn btn-sm" id="btn-new-firing">+ Nuova</button>
+            </div>
+            <div class="entry-list" id="firings-list"></div>
+        </section>
+
+        <!-- IMPOSTAZIONI -->
+        <section id="view-settings" class="view-section">
+            <div class="section-title" style="margin-bottom:1rem;">Impostazioni</div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    Sincronizzazione Cloud (GitHub Gist)
+                </div>
+                <div style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--ink-muted);">
+                    Inserisci qui sotto il tuo <strong>Token GitHub</strong> (Classic Token con permesso <code>gist</code>) e l'ID del Gist per sincronizzare automaticamente i dati tra PC e telefono.
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; gap: 0.4rem;">
+                    <label class="form-label">GitHub Token (Personal Access Token)</label>
+                    <input type="password" class="form-control" id="sync-token" placeholder="ghp_xxxxxxxxxxxx">
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; gap: 0.4rem;">
+                    <label class="form-label">GitHub Gist ID (lascia vuoto per crearlo automatico)</label>
+                    <input type="text" class="form-control" id="sync-gist-id" placeholder="ID del Gist (es. a1b2c3d...)">
+                </div>
+                <div class="backup-btns">
+                    <button class="btn" id="btn-sync-save">Salva & Sincronizza</button>
+                    <button class="btn btn-ghost" id="btn-sync-pull">Scarica da Cloud</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    Forni
+                    <button class="btn btn-sm btn-subtle" id="btn-add-oven">+ Aggiungi</button>
+                </div>
+                <div id="ovens-rows"></div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    Argille
+                    <button class="btn btn-sm btn-subtle" id="btn-add-clay">+ Aggiungi</button>
+                </div>
+                <div id="clays-rows"></div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    Smalti & Colori
+                    <button class="btn btn-sm btn-subtle" id="btn-add-glaze">+ Aggiungi</button>
+                </div>
+                <div id="glazes-rows"></div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">Backup Dati Locale</div>
+                <div class="backup-btns">
+                    <button class="btn btn-ghost" id="btn-export">⬇ Esporta</button>
+                    <button class="btn btn-ghost" id="btn-import">⬆ Importa</button>
+                    <input type="file" id="import-file-input" accept=".json" style="display:none">
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- TAB BAR -->
+    <nav class="tab-bar">
+        <button class="tab-btn active" data-view="view-lots">
+            <span class="tab-icon">🏺</span>Lotti
+        </button>
+        <button class="tab-btn" data-view="view-sales">
+            <span class="tab-icon">💶</span>Vendite
+        </button>
+        <button class="tab-btn" data-view="view-scraps">
+            <span class="tab-icon">💔</span>Scarti
+        </button>
+        <button class="tab-btn" data-view="view-firings">
+            <span class="tab-icon">🔥</span>Cotture
+        </button>
+        <button class="tab-btn" data-view="view-settings">
+            <span class="tab-icon">⚙️</span>Altro
+        </button>
+    </nav>
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <!-- ── MODALI ────────────────────────────────────── -->
+
+    <!-- Lotto modal -->
+    <div class="modal-overlay" id="lot-modal">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h2 id="lot-modal-title">Nuovo Lotto</h2>
+                <button class="modal-close" id="close-lot-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="lot-id">
+                <div class="form-section">
+                    <div class="form-section-title">Generale</div>
+                    <div class="form-stack">
+                        <div class="form-row-2">
+                            <div class="form-group" style="grid-column: 1/-1;">
+                                <label class="form-label">Nome Lotto *</label>
+                                <input type="text" class="form-control" id="lot-name" placeholder="es. Tazzine da espresso">
+                            </div>
+                        </div>
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label class="form-label">Data</label>
+                                <input type="date" class="form-control" id="lot-date">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Stato</label>
+                                <select class="form-control" id="lot-status">
+                                    <option value="In lavorazione">In lavorazione</option>
+                                    <option value="Da cuocere">Da cuocere</option>
+                                    <option value="Finita">Finita</option>
+                                    <option value="Venduta">Venduta</option>
+                                    <option value="Scartata">Scartata</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Foto</label>
+                            <div class="photo-btn" id="photo-btn" onclick="document.getElementById('lot-photo-file').click()">
+                                <span class="photo-icon">📷</span>
+                                <span id="photo-label">Aggiungi</span>
+                                <img id="lot-photo-img" style="display:none;">
+                            </div>
+                            <input type="file" id="lot-photo-file" accept="image/*" style="display:none">
+                            <input type="hidden" id="lot-photo-url">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Note</label>
+                            <textarea class="form-control" id="lot-notes" placeholder="Tecnica, ispirazione, obiettivi…"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Pezzi e Sottogruppi</div>
+                    <div class="multiplier-row" style="margin-bottom:0.75rem;">
+                        <span class="multiplier-label">Moltiplicatore prezzo</span>
+                        <input type="number" class="multiplier-input" id="lot-multiplier" value="3.5" min="1" step="0.5">
+                        <span style="font-size:0.75rem; color:var(--ink-muted);">×</span>
+                    </div>
+                    <div class="sg-header">
+                        <span>Tipo</span><span>Q.tà</span><span>Peso(g)</span><span>Prezzo</span><span></span>
+                    </div>
+                    <div class="sg-rows" id="sg-rows"></div>
+                    <button type="button" class="btn btn-subtle btn-sm full" id="btn-add-sg" style="margin-top:0.6rem;">+ Aggiungi riga</button>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">Materiali & Cotture</div>
+                    <div class="form-stack">
+                        <div class="form-group">
+                            <label class="form-label">Argilla</label>
+                            <select class="form-control" id="lot-clay">
+                                <option value="">Nessuna</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Smalti</label>
+                            <div class="glaze-grid" id="glaze-grid"></div>
+                        </div>
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label class="form-label">1ª Cottura</label>
+                                <select class="form-control" id="lot-fire1"><option value="">Nessuna</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">2ª Cottura</label>
+                                <select class="form-control" id="lot-fire2"><option value="">Nessuna</option></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-neutral" id="close-lot-modal-btn">Annulla</button>
+                <button class="btn" id="save-lot-btn">Salva Lotto</button>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <!-- MODAL COTTURA -->
-  <div class="modal-overlay" id="firing-modal">
-    <div class="modal" style="max-width: 500px;">
-      <div class="modal-header">
-        <h2 id="firing-modal-title">Nuova Cottura</h2>
-        <button class="close-btn" id="close-firing-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="firing-form">
-          <input type="hidden" id="firing-id">
-          <div class="form-group"><label>Nome Cottura *</label><input type="text" id="firing-form-name" required placeholder="Es. Biscottatura Forno Grande #1"></div>
-          <div class="form-group"><label>Data *</label><input type="date" id="firing-form-date" required></div>
-          <div class="form-group"><label>Forno *</label><select id="firing-form-oven" required><option value="">Seleziona forno</option></select></div>
-          <div class="form-group"><label>Tipo Temperatura *</label><select id="firing-form-type"><option value="Bassa temperatura">Bassa temperatura</option><option value="Alta temperatura">Alta temperatura</option></select></div>
-          <div class="form-group"><label>Costo Totale Forno (€) *</label><input type="number" id="firing-form-cost" required min="0" step="0.5"></div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" id="close-firing-modal-btn">Annulla</button>
-        <button class="btn btn-sm" id="save-firing-btn">Salva Cottura</button>
-      </div>
+
+    <!-- Sale modal -->
+    <div class="modal-overlay" id="sale-modal">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h2>Registra Vendita</h2>
+                <button class="modal-close" id="close-sale-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-stack">
+                    <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="sale-date"></div>
+                    <div class="form-group"><label class="form-label">Lotto</label><select class="form-control" id="sale-ceramic"><option value="">Seleziona lotto…</option></select></div>
+                    <div class="form-group"><label class="form-label">Quantità</label><input type="number" class="form-control" id="sale-qty" value="1" min="1"></div>
+                    <div class="form-group"><label class="form-label">Totale incassato (€)</label><input type="number" class="form-control" id="sale-price" step="0.01" placeholder="0,00"></div>
+                    <div class="form-group"><label class="form-label">Note</label><input type="text" class="form-control" id="sale-notes" placeholder="Facoltativo"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-neutral" id="close-sale-modal-btn">Annulla</button>
+                <button class="btn" id="save-sale-btn">Registra</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- MODAL SCARTO -->
-  <div class="modal-overlay" id="scrap-modal">
-    <div class="modal" style="max-width: 450px;">
-      <div class="modal-header">
-        <h2>Registra Scarto / Rottura</h2>
-        <button class="close-btn" id="close-scrap-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="scrap-form">
-          <div class="form-group" style="margin-bottom: 1rem;"><label>Seleziona Lotto *</label><select id="scrap-form-lot" required><option value="">Seleziona lotto...</option></select></div>
-          <div class="form-group" style="margin-bottom: 1rem;"><label>Quantità pezzi scartati *</label><input type="number" id="scrap-form-qty" min="1" value="1" required></div>
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label>Fase di scarto *</label>
-            <select id="scrap-form-phase">
-              <option value="Crudo (in lavorazione)">Crudo (in lavorazione)</option>
-              <option value="Biscotto (prima cottura)">Biscotto (prima cottura)</option>
-              <option value="Smalto (seconda cottura)">Smalto (seconda cottura)</option>
-              <option value="Manipolazione">Manipolazione</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" id="close-scrap-modal-btn">Annulla</button>
-        <button class="btn btn-sm" id="save-scrap-btn">Registra Scarto</button>
-      </div>
+    <!-- Scrap modal -->
+    <div class="modal-overlay" id="scrap-modal">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h2>Registra Scarto</h2>
+                <button class="modal-close" id="close-scrap-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-stack">
+                    <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="scrap-date"></div>
+                    <div class="form-group"><label class="form-label">Lotto</label><select class="form-control" id="scrap-ceramic"><option value="">Seleziona lotto…</option></select></div>
+                    <div class="form-group"><label class="form-label">Quantità</label><input type="number" class="form-control" id="scrap-qty" value="1" min="1"></div>
+                    <div class="form-group">
+                        <label class="form-label">Fase</label>
+                        <select class="form-control" id="scrap-phase">
+                            <option value="In lavorazione / Crudo">Crudo (in lavorazione)</option>
+                            <option value="Prima cottura (Biscotto)">Biscotto (prima cottura)</option>
+                            <option value="Seconda cottura (Smalto)">Smalto (seconda cottura)</option>
+                            <option value="Manipolazione">Manipolazione</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-neutral" id="close-scrap-modal-btn">Annulla</button>
+                <button class="btn" id="save-scrap-btn">Registra</button>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <!-- MODAL AGGIUNTA / MODIFICA MATERIALE / ATTREZZATURA / FORNO -->
-  <div class="modal-overlay" id="material-modal">
-    <div class="modal" style="max-width: 420px;">
-      <div class="modal-header">
-        <h2 id="material-modal-title">Aggiungi Materiale</h2>
-        <button class="close-btn" id="close-material-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="material-form">
-          <input type="hidden" id="material-type-target">
-          <input type="hidden" id="material-edit-id">
-          <div class="form-group" style="margin-bottom: 1rem;"><label>Nome *</label><input type="text" id="mat-form-name" required placeholder="Nome materiale / attrezzatura"></div>
-          <div class="form-group" style="margin-bottom: 1rem;" id="mat-form-unit-wrapper"><label id="mat-unit-label">Formato (kg / ml / conf.)</label><input type="number" id="mat-form-unit" value="1" min="0.1" step="0.1"></div>
-          <div class="form-group" style="margin-bottom: 1rem; display: none;" id="mat-form-qty-wrapper"><label id="mat-qty-label">Quantità</label><input type="number" id="mat-form-qty" value="1" min="1" step="1"></div>
-          <div class="form-group" style="margin-bottom: 1rem;"><label>Prezzo (€) *</label><input type="number" id="mat-form-price" required min="0" step="0.01" placeholder="10.00"></div>
-          <div class="form-group" id="mat-form-color-wrapper" style="margin-bottom: 1rem; display: none;"><label>Colore anteprima</label><input type="color" id="mat-form-color" value="#9e5338" style="height: 40px; padding: 2px;"></div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" id="close-material-modal-btn">Annulla</button>
-        <button class="btn btn-sm" id="save-material-btn">Salva Voce</button>
-      </div>
+
+    <!-- Firing modal -->
+    <div class="modal-overlay" id="firing-modal">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h2>Nuova Cottura</h2>
+                <button class="modal-close" id="close-firing-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-stack">
+                    <div class="form-group"><label class="form-label">Nome</label><input type="text" class="form-control" id="firing-name" placeholder="es. Biscotto Maggio"></div>
+                    <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="firing-date"></div>
+                    <div class="form-group">
+                        <label class="form-label">Forno</label>
+                        <select class="form-control" id="firing-oven"><option value="">Seleziona forno…</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipo</label>
+                        <select class="form-control" id="firing-type">
+                            <option value="Bassa temperatura">Bassa temperatura</option>
+                            <option value="Alta temperatura">Alta temperatura</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label">Costo (€)</label><input type="number" class="form-control" id="firing-cost" step="0.5" placeholder="0,00"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-neutral" id="close-firing-modal-btn">Annulla</button>
+                <button class="btn" id="save-firing-btn">Salva</button>
+            </div>
+        </div>
     </div>
-  </div>
-  
-  <script>
-  const DEMO_DATA = {
-    "ovens": [
-      { "id": "oven_large", "name": "Forno grande", "lowTempCost": 60, "highTempCost": 100 },
-      { "id": "oven_small", "name": "Forno piccolo", "lowTempCost": 35, "highTempCost": 65 }
-    ],
-    "attrezzature_costi": [
-      { "id": "eq_1", "nome": "Secchio 1 lt.", "prezzo": 4.02, "quantita": 2 }
-    ],
-    "colori_smalti": [
-      { "id": "col_1", "name": "Designer Liner Red (37 ml)", "prezzo": 7.4, "quantita": 1, "color": "#b33928" }
-    ],
-    "cristalline": [
-      { "id": "crs_1", "name": "VTRP 7 Cristallina Lucida (HT) - 1 kg", "prezzo": 12.12, "quantita": 2, "color": "#e5e7eb" }
-    ],
-    "argille": [
-      { "id": "clay_1", "name": "Stoneware bianca Colorobbia - 25 kg", "kg": 25, "prezzo": 32.3 }
-    ],
-    "firings": [],
-    "ceramics": [],
-    "scraps": []
-  };
-  
-  let appData = {};
-  let selectedCeramicsIds = new Set();
-  
-  function loadData() {
-    const saved = localStorage.getItem("ceramic_app_data_pro_v12");
-    appData = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEMO_DATA));
-    ensureDataStructure();
-  }
-  
-  function saveData() {
-    localStorage.setItem("ceramic_app_data_pro_v12", JSON.stringify(appData));
-  }
-  
-  function ensureDataStructure() {
-    if (!appData.ovens) appData.ovens = DEMO_DATA.ovens;
-    if (!appData.attrezzature_costi) appData.attrezzature_costi = DEMO_DATA.attrezzature_costi;
-    if (!appData.colori_smalti) appData.colori_smalti = DEMO_DATA.colori_smalti;
-    if (!appData.cristalline) appData.cristalline = DEMO_DATA.cristalline;
-    if (!appData.argille) appData.argille = DEMO_DATA.argille;
-    if (!appData.firings) appData.firings = [];
-    if (!appData.ceramics) appData.ceramics = [];
-    if (!appData.scraps) appData.scraps = [];
-  }
-  
-  function getTotalPiecesCount(ceramic) {
-    if (!ceramic.subgroups || ceramic.subgroups.length === 0) return 0;
-    let count = 0;
-    ceramic.subgroups.forEach(sg => count += (sg.quantity || 0));
-    return count;
-  }
-  
-  function getRemainingPiecesCount(ceramic) {
-    if (!ceramic.subgroups || ceramic.subgroups.length === 0) return 0;
-    let count = 0;
-    ceramic.subgroups.forEach(sg => {
-      const q = sg.quantity || 0;
-      const s = sg.soldQuantity || 0;
-      count += Math.max(0, q - s);
-    });
-    return count;
-  }
-  
-  function calculateUnitMaterialCost(unitWeightGrams, clayId, glazeIds = []) {
-    let cost = 0;
-    const kgWeight = unitWeightGrams / 1000.0;
-    if (clayId) {
-      const clay = appData.argille.find(c => c.id === clayId);
-      if (clay && clay.kg > 0) cost += (clay.prezzo / clay.kg) * kgWeight;
-    }
-    const allPaints = [...appData.colori_smalti, ...appData.cristalline];
-    if (glazeIds && glazeIds.length > 0) {
-      glazeIds.forEach(gId => {
-        const paint = allPaints.find(p => p.id === gId);
-        if (paint) cost += (paint.prezzo / 20) * (kgWeight > 0 ? kgWeight : 0.1);
-      });
-    }
-    return cost;
-  }
-  
-  function calculateTotalEquipmentCost() {
-    let total = 0;
-    if (appData.attrezzature_costi) {
-      appData.attrezzature_costi.forEach(eq => { total += (eq.prezzo || 0) * (eq.quantita || 1); });
-    }
-    return total;
-  }
-  
-  function calculateSubgroupFullUnitCost(sg, ceramic) {
-    const unitMat = calculateUnitMaterialCost(sg.unitWeight || 0, ceramic.clayId, ceramic.glazeIds);
-    let totalLotWeight = 0, totalLotPieces = 0;
-    if (ceramic.subgroups) {
-      ceramic.subgroups.forEach(sub => {
-        totalLotWeight += (sub.unitWeight || 0) * (sub.quantity || 0);
-        totalLotPieces += (sub.quantity || 0);
-      });
-    }
-    
-    let unitFiringShare = 0;
-    const firingsToCheck = [ceramic.fire1Id, ceramic.fire2Id].filter(Boolean);
-    firingsToCheck.forEach(fId => {
-      const firing = appData.firings.find(f => f.id === fId);
-      if (firing) {
-        const ceramicsInFiring = appData.ceramics.filter(c => c.fire1Id === firing.id || c.fire2Id === firing.id);
-        let totalWeightInFiring = 0;
-        ceramicsInFiring.forEach(c => {
-          if (c.subgroups) c.subgroups.forEach(sub => totalWeightInFiring += (sub.unitWeight || 0) * (sub.quantity || 0));
-        });
-        let lotFiringCost = (totalWeightInFiring > 0 && totalLotWeight > 0) ? firing.totalCost * (totalLotWeight / totalWeightInFiring) : firing.totalCost;
-        if (totalLotWeight > 0) {
-          const subgroupTotalWeight = (sg.unitWeight || 0) * (sg.quantity || 0);
-          unitFiringShare += (lotFiringCost * (subgroupTotalWeight / totalLotWeight)) / Math.max(1, sg.quantity);
-        } else {
-          unitFiringShare += lotFiringCost / Math.max(1, totalLotPieces);
-        }
-      }
-    });
-    
-    let totalLabPieces = 0;
-    appData.ceramics.forEach(c => totalLabPieces += getTotalPiecesCount(c));
-    let unitEqShare = totalLabPieces > 0 ? (calculateTotalEquipmentCost() / Math.max(100, totalLabPieces)) : 0;
-    return unitMat + unitFiringShare + unitEqShare;
-  }
-  
-  function calculateCeramicCosts(ceramic) {
-    let subgroupsTotalCost = 0, subgroupsMatCost = 0;
-    if (ceramic.subgroups) {
-      ceramic.subgroups.forEach(sg => {
-        const fullUnitCost = calculateSubgroupFullUnitCost(sg, ceramic);
-        subgroupsTotalCost += fullUnitCost * (sg.quantity || 0);
-        subgroupsMatCost += calculateUnitMaterialCost(sg.unitWeight || 0, ceramic.clayId, ceramic.glazeIds) * (sg.quantity || 0);
-      });
-    }
-    return { total: subgroupsTotalCost, materials: subgroupsMatCost };
-  }
-  
-  function calculateSubgroupUnitPrice(sg, ceramic) {
-    const totalUnitCost = calculateSubgroupFullUnitCost(sg, ceramic);
-    const unitMat = calculateUnitMaterialCost(sg.unitWeight || 0, ceramic.clayId, ceramic.glazeIds);
-    const multiplier = ceramic.multiplier || 3.5;
-    return sg.unitPrice > 0 ? sg.unitPrice : Math.max(unitMat * multiplier, totalUnitCost * multiplier);
-  }
-  
-  function calculateCeramicSellingPrice(ceramic) {
-    if (!ceramic.subgroups) return 0;
-    let totalPrice = 0;
-    ceramic.subgroups.forEach(sg => { totalPrice += calculateSubgroupUnitPrice(sg, ceramic) * (sg.quantity || 0); });
-    return totalPrice;
-  }
-  
-  function calculateActualSales(ceramic) {
-    if (!ceramic.subgroups) return 0;
-    let actual = 0;
-    ceramic.subgroups.forEach(sg => { actual += (sg.soldQuantity || 0) * calculateSubgroupUnitPrice(sg, ceramic); });
-    return actual;
-  }
-  
-  function formatCurrency(val) {
-    if (val == null || isNaN(val)) return "€0,00";
-    return "€" + val.toFixed(2).replace('.', ',');
-  }
-  
-  function updateDashboard() {
-    const ceramics = appData.ceramics;
-    document.getElementById("dash-total").innerText = ceramics.length;
-    let totalPieces = 0, totalUnitCosts = 0, unitCostCount = 0;
-    ceramics.forEach(c => {
-      totalPieces += getTotalPiecesCount(c);
-      const costs = calculateCeramicCosts(c);
-      const pz = getTotalPiecesCount(c);
-      if (pz > 0) { totalUnitCosts += (costs.total / pz); unitCostCount++; }
-    });
-    document.getElementById("dash-total-pieces").innerText = totalPieces;
-    const waitingForCooking = ceramics.filter(c => c.status === "Da cuocere").length;
-    document.getElementById("dash-to-fire").innerText = waitingForCooking;
-    
-    const banner = document.getElementById("kiln-suggestion-banner");
-    if (waitingForCooking > 0) {
-      banner.classList.remove("hidden");
-      document.getElementById("pieces-waiting-count").innerText = waitingForCooking;
-    } else {
-      banner.classList.add("hidden");
-    }
-    
-    let potentialVal = 0, totalSalesVal = 0, marginSum = 0, marginCount = 0;
-    ceramics.forEach(c => {
-      const price = calculateCeramicSellingPrice(c);
-      const actual = calculateActualSales(c);
-      const costs = calculateCeramicCosts(c);
-      if (c.status !== "Venduta" && c.status !== "Scartata") potentialVal += price;
-      totalSalesVal += actual;
-      if (costs.total > 0 && price > 0 && c.status !== "Scartata") {
-        marginSum += ((price - costs.total) / price) * 100;
-        marginCount++;
-      }
-    });
-    document.getElementById("dash-potential-value").innerText = formatCurrency(potentialVal);
-    document.getElementById("dash-total-sales").innerText = formatCurrency(totalSalesVal);
-    document.getElementById("dash-avg-margin").innerText = marginCount > 0 ? (marginSum / marginCount).toFixed(1) + "%" : "0%";
-    document.getElementById("dash-avg-unit-cost").innerText = unitCostCount > 0 ? formatCurrency(totalUnitCosts / unitCostCount) : "€0,00";
 
-    // Scarti stats
-    let totalScrapsCount = 0;
-    let totalScrapsCost = 0;
-    appData.scraps.forEach(sc => {
-      totalScrapsCount += sc.quantity;
-      const lot = appData.ceramics.find(c => c.id === sc.ceramicId);
-      if (lot && lot.subgroups && lot.subgroups.length > 0) {
-        const avgUnitCost = calculateCeramicCosts(lot).total / Math.max(1, getTotalPiecesCount(lot));
-        totalScrapsCost += avgUnitCost * sc.quantity;
-      }
-    });
-    document.getElementById("dash-total-scraps").innerText = totalScrapsCount;
-    document.getElementById("dash-total-scraps-cost").innerText = formatCurrency(totalScrapsCost);
-  }
-  
-  function getFilteredCeramics() {
-    const searchQuery = document.getElementById("filter-search").value.toLowerCase();
-    const filterStatus = document.getElementById("filter-status").value;
-    const filterClay = document.getElementById("filter-clay").value;
-    return appData.ceramics.filter(c => {
-      if (filterStatus && c.status !== filterStatus) return false;
-      if (filterClay && c.clayId !== filterClay) return false;
-      if (searchQuery && !c.name.toLowerCase().includes(searchQuery)) return false;
-      return true;
-    });
-  }
-  
-  function renderCeramics() {
-    const tbody = document.getElementById("ceramics-tbody");
-    const mobileContainer = document.getElementById("mobile-cards-container");
-    tbody.innerHTML = "";
-    mobileContainer.innerHTML = "";
-    const filtered = getFilteredCeramics();
-    
-    if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 2rem; color: var(--text-muted);">Nessun lotto trovato.</td></tr>`;
-      mobileContainer.innerHTML = `<div style="text-align: center; padding: 2rem; color: var(--text-muted); background: white; border-radius: var(--radius);">Nessun lotto trovato.</div>`;
-      return;
-    }
-    
-    const allPaints = [...appData.colori_smalti, ...appData.cristalline];
-    filtered.forEach(c => {
-      const clayObj = appData.argille.find(cl => cl.id === c.clayId);
-      const clayName = clayObj ? clayObj.name : "—";
-      let glazeHtml = c.glazeIds ? c.glazeIds.map(gId => {
-        const g = allPaints.find(gl => gl.id === gId);
-        return g ? `<span class="color-dot" style="background-color: ${g.color || '#ccc'};"></span>${escapeHtml(g.name)}` : "";
-      }).filter(Boolean).join(", ") : "Nessuno";
-      
-      const totalPz = getTotalPiecesCount(c);
-      const remainingPz = getRemainingPiecesCount(c);
-      const costs = calculateCeramicCosts(c);
-      const totalPrice = calculateCeramicSellingPrice(c);
-      
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><button class="expand-btn" onclick="toggleExpandRow('${c.id}', this)">+</button></td>
-        <td><input type="checkbox" onchange="toggleSelectCeramic('${c.id}')"></td>
-        <td>${c.photo ? `<img src="${c.photo}" style="width: 36px; height: 36px; object-fit: cover; border-radius: 4px;">` : '🏺'}</td>
-        <td style="font-weight: 600;">${escapeHtml(c.name)}</td>
-        <td>${remainingPz} / ${totalPz} pz</td>
-        <td><span class="badge badge-${c.status.toLowerCase().replace(/ /g, '-')}">${escapeHtml(c.status)}</span></td>
-        <td>${escapeHtml(clayName)}</td>
-        <td>${costs.total > 0 ? formatCurrency(costs.total) : '€0,00'}</td>
-        <td style="font-weight: 600;">${formatCurrency(totalPrice)}</td>
-        <td class="actions-cell">
-          <button class="btn btn-secondary btn-sm" onclick="openCeramicModal('${c.id}')">Modifica</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteCeramic('${c.id}')">&times;</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-  
-  window.toggleExpandRow = (id, btn) => {
-    let dropRow = document.getElementById(`dropdown-${id}`);
-    if (dropRow) { dropRow.remove(); btn.innerText = "+"; } 
-    else { btn.innerText = "-"; }
-  };
-  
-  function renderFiringsTable() {
-    const tbody = document.getElementById("firings-tbody");
-    tbody.innerHTML = "";
-    appData.firings.forEach(f => {
-      const oven = appData.ovens.find(o => o.id === f.ovenId);
-      tbody.innerHTML += `
-        <tr>
-          <td style="font-weight: 600;">${escapeHtml(f.name)}</td>
-          <td>${escapeHtml(f.date)}</td>
-          <td>${escapeHtml(oven ? oven.name : '—')}</td>
-          <td>${escapeHtml(f.type)}</td>
-          <td>${formatCurrency(f.totalCost)}</td>
-          <td class="actions-cell">
-            <button class="btn btn-secondary btn-sm" onclick="openFiringModal('${f.id}')">Modifica</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteFiring('${f.id}')">&times;</button>
-          </td>
-        </tr>
-      `;
-    });
-  }
+    <!-- Material modal (argille/smalti/forni) -->
+    <div class="modal-overlay" id="material-modal">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-header">
+                <h2 id="material-modal-title">Aggiungi</h2>
+                <button class="modal-close" id="close-material-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="mat-type">
+                <div class="form-stack">
+                    <div class="form-group"><label class="form-label">Nome</label><input type="text" class="form-control" id="mat-name"></div>
+                    <div class="form-group" id="mat-kg-wrap"><label class="form-label" id="mat-unit-label">Kg per confezione</label><input type="number" class="form-control" id="mat-unit" value="1" step="0.1"></div>
+                    <div class="form-group"><label class="form-label">Prezzo (€)</label><input type="number" class="form-control" id="mat-price" step="0.01"></div>
+                    <div class="form-group" id="mat-color-wrap" style="display:none;"><label class="form-label">Colore</label><input type="color" class="form-control" id="mat-color" value="#9e5338" style="height:48px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-neutral" id="close-material-modal-btn">Annulla</button>
+                <button class="btn" id="save-material-btn">Salva</button>
+            </div>
+        </div>
+    </div>
 
-  function renderScrapsTable() {
-    const tbody = document.getElementById("scraps-tbody");
-    tbody.innerHTML = "";
-    if (!appData.scraps || appData.scraps.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Nessuno scarto registrato.</td></tr>`;
-      return;
-    }
-    appData.scraps.forEach(sc => {
-      const lot = appData.ceramics.find(c => c.id === sc.ceramicId);
-      const lotName = lot ? lot.name : "Lotto eliminato";
-      let unitCost = 0;
-      if (lot && getTotalPiecesCount(lot) > 0) {
-        unitCost = calculateCeramicCosts(lot).total / getTotalPiecesCount(lot);
-      }
-      const totalLost = unitCost * sc.quantity;
-      tbody.innerHTML += `
-        <tr>
-          <td style="font-weight: 600;">${escapeHtml(lotName)}</td>
-          <td>${escapeHtml(sc.phase)}</td>
-          <td>${sc.quantity} pz</td>
-          <td>${formatCurrency(totalLost)}</td>
-          <td class="actions-cell"><button class="btn btn-danger btn-sm" onclick="deleteScrap('${sc.id}')">&times;</button></td>
-        </tr>
-      `;
-    });
-  }
+    <!-- Confirm modal -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-sheet" style="max-height:auto;">
+            <div class="modal-handle"></div>
+            <div class="modal-body" style="padding:1.5rem 1rem; text-align:center;">
+                <div style="font-size:2rem; margin-bottom:0.5rem;">🗑️</div>
+                <div style="font-weight:700; margin-bottom:0.3rem;" id="confirm-title">Eliminare?</div>
+                <div style="font-size:0.85rem; color:var(--ink-muted);" id="confirm-msg">Questa azione non può essere annullata.</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-neutral" id="confirm-cancel">Annulla</button>
+                <button class="btn btn-danger" id="confirm-ok">Elimina</button>
+            </div>
+        </div>
+    </div>
 
-  window.deleteScrap = (id) => {
-    if (confirm("Eliminare questa registrazione di scarto?")) {
-      appData.scraps = appData.scraps.filter(s => s.id !== id);
-      saveData();
-      refreshAll();
-    }
-  };
-
-  document.getElementById("btn-new-scrap").addEventListener("click", openScrapModal);
-  document.getElementById("btn-new-scrap-tab").addEventListener("click", openScrapModal);
-
-  function openScrapModal() {
-    const modal = document.getElementById("scrap-modal");
-    const lotSel = document.getElementById("scrap-form-lot");
-    lotSel.innerHTML = '<option value="">Seleziona lotto...</option>';
-    appData.ceramics.forEach(c => {
-      lotSel.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)} (${getRemainingPiecesCount(c)} pz residui)</option>`;
-    });
-    modal.classList.add("open");
-  }
-
-  document.getElementById("save-scrap-btn").addEventListener("click", () => {
-    const ceramicId = document.getElementById("scrap-form-lot").value;
-    const quantity = parseInt(document.getElementById("scrap-form-qty").value) || 1;
-    const phase = document.getElementById("scrap-form-phase").value;
-    if (!ceramicId) return alert("Seleziona un lotto.");
-    
-    appData.scraps.push({ id: "scrap_" + Date.now(), ceramicId, quantity, phase });
-    
-    // Riduci automaticamente i pezzi dal lotto o imposta a scartata se esauriti
-    const lot = appData.ceramics.find(c => c.id === ceramicId);
-    if (lot && lot.subgroups && lot.subgroups.length > 0) {
-      // Scala dai sottogruppi
-      let rem = quantity;
-      lot.subgroups.forEach(sg => {
-        if (rem > 0) {
-          const availableInSg = (sg.quantity || 0) - (sg.soldQuantity || 0);
-          const toReduce = Math.min(rem, availableInSg);
-          sg.quantity = Math.max(0, (sg.quantity || 0) - toReduce);
-          rem -= toReduce;
-        }
-      });
-      if (getRemainingPiecesCount(lot) === 0) lot.status = "Scartata";
-    }
-
-    saveData();
-    document.getElementById("scrap-modal").classList.remove("open");
-    refreshAll();
-  });
-
-  document.getElementById("close-scrap-modal").addEventListener("click", () => document.getElementById("scrap-modal").classList.remove("open"));
-  document.getElementById("close-scrap-modal-btn").addEventListener("click", () => document.getElementById("scrap-modal").classList.remove("open"));
-  
-  window.deleteFiring = (firingId) => {
-    if (confirm("Eliminare questa cottura?")) {
-      appData.firings = appData.firings.filter(f => f.id !== firingId);
-      saveData();
-      refreshAll();
-    }
-  };
-  
-  document.getElementById("btn-new-firing").addEventListener("click", () => openFiringModal());
-  
-  function openFiringModal(firingId = null) {
-    const modal = document.getElementById("firing-modal");
-    document.getElementById("firing-form").reset();
-    document.getElementById("firing-id").value = "";
-    document.getElementById("firing-form-date").value = new Date().toISOString().split('T')[0];
-    
-    const ovenSel = document.getElementById("firing-form-oven");
-    ovenSel.innerHTML = '<option value="">Seleziona forno</option>';
-    appData.ovens.forEach(o => { ovenSel.innerHTML += `<option value="${o.id}">${escapeHtml(o.name)}</option>`; });
-    
-    if (firingId) {
-      document.getElementById("firing-modal-title").innerText = "Modifica Cottura";
-      const f = appData.firings.find(item => item.id === firingId);
-      if (f) {
-        document.getElementById("firing-id").value = f.id;
-        document.getElementById("firing-form-name").value = f.name;
-        document.getElementById("firing-form-date").value = f.date;
-        document.getElementById("firing-form-oven").value = f.ovenId;
-        document.getElementById("firing-form-type").value = f.type;
-        document.getElementById("firing-form-cost").value = f.totalCost;
-      }
-    } else {
-      document.getElementById("firing-modal-title").innerText = "Nuova Cottura";
-    }
-    modal.classList.add("open");
-  }
-  
-  document.getElementById("save-firing-btn").addEventListener("click", () => {
-    const id = document.getElementById("firing-id").value;
-    const name = document.getElementById("firing-form-name").value.trim();
-    const date = document.getElementById("firing-form-date").value;
-    const ovenId = document.getElementById("firing-form-oven").value;
-    const type = document.getElementById("firing-form-type").value;
-    const totalCost = parseFloat(document.getElementById("firing-form-cost").value) || 0;
-    
-    if (!name || !date || !ovenId) return alert("Compila i campi obbligatori.");
-    
-    if (id) {
-      const idx = appData.firings.findIndex(f => f.id === id);
-      if (idx !== -1) appData.firings[idx] = { id, name, date, ovenId, type, totalCost };
-    } else {
-      appData.firings.push({ id: "firing_" + Date.now(), name, date, ovenId, type, totalCost });
-    }
-    saveData();
-    document.getElementById("firing-modal").classList.remove("open");
-    refreshAll();
-  });
-  
-  document.getElementById("close-firing-modal").addEventListener("click", () => document.getElementById("firing-modal").classList.remove("open"));
-  document.getElementById("close-firing-modal-btn").addEventListener("click", () => document.getElementById("firing-modal").classList.remove("open"));
-  
-  function renderSettingsTables() {
-    const ovenTbody = document.querySelector("#settings-oven-table tbody");
-    ovenTbody.innerHTML = "";
-    appData.ovens.forEach(o => {
-      ovenTbody.innerHTML += `
-        <tr>
-          <td style="font-weight: 600;">${escapeHtml(o.name)}</td>
-          <td>${formatCurrency(o.lowTempCost)}</td>
-          <td>${formatCurrency(o.highTempCost)}</td>
-          <td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('oven', '${o.id}')">Modifica</button></td>
-        </tr>
-      `;
-    });
-    
-    const clayTbody = document.querySelector("#settings-clay-table tbody");
-    clayTbody.innerHTML = "";
-    appData.argille.forEach(cl => {
-      clayTbody.innerHTML += `<tr><td style="font-weight: 600;">${escapeHtml(cl.name)}</td><td>${cl.kg} kg</td><td>${formatCurrency(cl.prezzo)}</td><td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('clay', '${cl.id}')">Modifica</button><button class="btn btn-danger btn-sm" onclick="deleteClay('${cl.id}')">&times;</button></td></tr>`;
-    });
-    
-    const glazeTbody = document.querySelector("#settings-glaze-table tbody");
-    glazeTbody.innerHTML = "";
-    appData.colori_smalti.forEach(g => {
-      glazeTbody.innerHTML += `<tr><td><span class="color-dot" style="background-color: ${g.color || '#ccc'};"></span></td><td style="font-weight: 600;">${escapeHtml(g.name)}</td><td>${formatCurrency(g.prezzo)}</td><td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('glaze', '${g.id}')">Modifica</button><button class="btn btn-danger btn-sm" onclick="deleteGlaze('${g.id}')">&times;</button></td></tr>`;
-    });
-    
-    const crystalTbody = document.querySelector("#settings-crystal-table tbody");
-    crystalTbody.innerHTML = "";
-    appData.cristalline.forEach(c => {
-      crystalTbody.innerHTML += `<tr><td><span class="color-dot" style="background-color: ${c.color || '#ccc'};"></span></td><td style="font-weight: 600;">${escapeHtml(c.name)}</td><td>${formatCurrency(c.prezzo)}</td><td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('crystal', '${c.id}')">Modifica</button><button class="btn btn-danger btn-sm" onclick="deleteCrystal('${c.id}')">&times;</button></td></tr>`;
-    });
-    
-    const eqTbody = document.querySelector("#settings-equipment-table tbody");
-    eqTbody.innerHTML = "";
-    appData.attrezzature_costi.forEach(eq => {
-      eqTbody.innerHTML += `<tr><td style="font-weight: 600;">${escapeHtml(eq.nome)}</td><td>${formatCurrency(eq.prezzo)}</td><td>${eq.quantita}</td><td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('equipment', '${eq.id}')">Modifica</button><button class="btn btn-danger btn-sm" onclick="deleteEquipment('${eq.id}')">&times;</button></td></tr>`;
-    });
-  }
-  
-  window.deleteClay = id => { if (confirm("Eliminare?")) { appData.argille = appData.argille.filter(c => c.id !== id); saveData(); refreshAll(); } };
-  window.deleteGlaze = id => { if (confirm("Eliminare?")) { appData.colori_smalti = appData.colori_smalti.filter(c => c.id !== id); saveData(); refreshAll(); } };
-  window.deleteCrystal = id => { if (confirm("Eliminare?")) { appData.cristalline = appData.cristalline.filter(c => c.id !== id); saveData(); refreshAll(); } };
-  window.deleteEquipment = id => { if (confirm("Eliminare?")) { appData.attrezzature_costi = appData.attrezzature_costi.filter(c => c.id !== id); saveData(); refreshAll(); } };
-  
-  function openMaterialModal(type, editId = null) {
-    document.getElementById("material-form").reset();
-    document.getElementById("material-type-target").value = type;
-    document.getElementById("material-edit-id").value = editId || "";
-    
-    const titleEl = document.getElementById("material-modal-title");
-    const unitWrapper = document.getElementById("mat-form-unit-wrapper");
-    const qtyWrapper = document.getElementById("mat-form-qty-wrapper");
-    const colorWrapper = document.getElementById("mat-form-color-wrapper");
-    
-    colorWrapper.style.display = "none";
-    unitWrapper.style.display = "block";
-    qtyWrapper.style.display = "none";
-    
-    let item = null;
-    if (editId) {
-      if (type === "oven") item = appData.ovens.find(o => o.id === editId);
-      if (type === "clay") item = appData.argille.find(c => c.id === editId);
-      if (type === "glaze") item = appData.colori_smalti.find(g => g.id === editId);
-      if (type === "crystal") item = appData.cristalline.find(c => c.id === editId);
-      if (type === "equipment") item = appData.attrezzature_costi.find(e => e.id === editId);
-    }
-    
-    if (type === "oven") {
-      titleEl.innerText = editId ? "Modifica Forno" : "Aggiungi Forno";
-      unitWrapper.style.display = "none";
-      if (item) {
-        document.getElementById("mat-form-name").value = item.name;
-        document.getElementById("mat-form-price").value = item.lowTempCost;
-      }
-    } else if (type === "clay") {
-      titleEl.innerText = editId ? "Modifica Argilla" : "Aggiungi Argilla";
-      document.getElementById("mat-unit-label").innerText = "Formato in kg";
-      if (item) {
-        document.getElementById("mat-form-name").value = item.name;
-        document.getElementById("mat-form-unit").value = item.kg;
-        document.getElementById("mat-form-price").value = item.prezzo;
-      }
-    } else if (type === "glaze") {
-      titleEl.innerText = editId ? "Modifica Smalto" : "Aggiungi Smalto";
-      colorWrapper.style.display = "block";
-      if (item) {
-        document.getElementById("mat-form-name").value = item.name;
-        document.getElementById("mat-form-price").value = item.prezzo;
-        document.getElementById("mat-form-color").value = item.color || "#9e5338";
-      }
-    } else if (type === "crystal") {
-      titleEl.innerText = editId ? "Modifica Cristallina" : "Aggiungi Cristallina";
-      colorWrapper.style.display = "block";
-      if (item) {
-        document.getElementById("mat-form-name").value = item.name;
-        document.getElementById("mat-form-price").value = item.prezzo;
-        document.getElementById("mat-form-color").value = item.color || "#e5e7eb";
-      }
-    } else if (type === "equipment") {
-      titleEl.innerText = editId ? "Modifica Attrezzatura" : "Aggiungi Attrezzatura";
-      unitWrapper.style.display = "none";
-      qtyWrapper.style.display = "block";
-      if (item) {
-        document.getElementById("mat-form-name").value = item.nome;
-        document.getElementById("mat-form-price").value = item.prezzo;
-        document.getElementById("mat-form-qty").value = item.quantita;
-      }
-    }
-    document.getElementById("material-modal").classList.add("open");
-  }
-  
-  document.getElementById("btn-add-clay").addEventListener("click", () => openMaterialModal("clay"));
-  document.getElementById("btn-add-glaze").addEventListener("click", () => openMaterialModal("glaze"));
-  document.getElementById("btn-add-crystal").addEventListener("click", () => openMaterialModal("crystal"));
-  document.getElementById("btn-add-equipment").addEventListener("click", () => openMaterialModal("equipment"));
-  
-  document.getElementById("save-material-btn").addEventListener("click", () => {
-    const type = document.getElementById("material-type-target").value;
-    const editId = document.getElementById("material-edit-id").value;
-    const name = document.getElementById("mat-form-name").value.trim();
-    const unit = parseFloat(document.getElementById("mat-form-unit").value) || 1;
-    const qty = parseInt(document.getElementById("mat-form-qty").value) || 1;
-    const prezzo = parseFloat(document.getElementById("mat-form-price").value) || 0;
-    const color = document.getElementById("mat-form-color").value;
-    
-    if (!name) return alert("Inserisci il nome.");
-    
-    if (editId) {
-      if (type === "oven") { let it = appData.ovens.find(o => o.id === editId); if(it){ it.name = name; it.lowTempCost = prezzo; it.highTempCost = prezzo * 1.5; } }
-      if (type === "clay") { let it = appData.argille.find(c => c.id === editId); if(it){ it.name = name; it.kg = unit; it.prezzo = prezzo; } }
-      if (type === "glaze") { let it = appData.colori_smalti.find(c => c.id === editId); if(it){ it.name = name; it.prezzo = prezzo; it.color = color; } }
-      if (type === "crystal") { let it = appData.cristalline.find(c => c.id === editId); if(it){ it.name = name; it.prezzo = prezzo; it.color = color; } }
-      if (type === "equipment") { let it = appData.attrezzature_costi.find(c => c.id === editId); if(it){ it.nome = name; it.prezzo = prezzo; it.quantita = qty; } }
-    } else {
-      if (type === "clay") appData.argille.push({ id: "clay_" + Date.now(), name, kg: unit, prezzo });
-      else if (type === "glaze") appData.colori_smalti.push({ id: "col_" + Date.now(), name, prezzo, quantita: 1, color });
-      else if (type === "crystal") appData.cristalline.push({ id: "crs_" + Date.now(), name, prezzo, quantita: 1, color });
-      else if (type === "equipment") appData.attrezzature_costi.push({ id: "eq_" + Date.now(), nome: name, prezzo, quantita: qty });
-    }
-    saveData();
-    document.getElementById("material-modal").classList.remove("open");
-    refreshAll();
-  });
-  
-  document.getElementById("close-material-modal").addEventListener("click", () => document.getElementById("material-modal").classList.remove("open"));
-  document.getElementById("close-material-modal-btn").addEventListener("click", () => document.getElementById("material-modal").classList.remove("open"));
-  
-  function renderSubgroupsInputs(subgroups = []) {
-    const container = document.getElementById("subgroups-list-container");
-    container.innerHTML = "";
-    if (subgroups.length === 0) subgroups = [{ type: "Tazzina", quantity: 1, soldQuantity: 0, unitWeight: 150, unitPrice: 0 }];
-    subgroups.forEach(sg => addRowToSubgroupsContainer(sg));
-    recalcAllSubgroupsPricing();
-  }
-  
-  function addRowToSubgroupsContainer(sg = { type: "Oggetto", quantity: 1, soldQuantity: 0, unitWeight: 150, unitPrice: 0 }) {
-    const container = document.getElementById("subgroups-list-container");
-    const row = document.createElement("div");
-    row.className = "subgroup-row";
-    row.innerHTML = `
-      <input type="text" placeholder="Tipo" class="sg-type" value="${escapeHtml(sg.type)}">
-      <input type="number" placeholder="Q.tà" class="sg-qty" min="1" value="${sg.quantity || 1}" oninput="recalcAllSubgroupsPricing()">
-      <input type="number" placeholder="Venduti" class="sg-sold" min="0" value="${sg.soldQuantity || 0}">
-      <input type="number" placeholder="Peso (g)" class="sg-weight" min="0" value="${sg.unitWeight || 150}" oninput="recalcAllSubgroupsPricing()">
-      <input type="text" readonly class="sg-mat-cost" value="€0,00" style="background: #faf7f2; border: none; font-weight: bold;">
-      <input type="number" placeholder="Prezzo un." class="sg-price" min="0" step="0.5" value="${(sg.unitPrice || 0).toFixed(2)}" oninput="this.dataset.manual = 'true';">
-      <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove(); recalcAllSubgroupsPricing();">&times;</button>
-    `;
-    container.appendChild(row);
-  }
-  
-  window.recalcAllSubgroupsPricing = () => {
-    const clayId = document.getElementById("form-clay").value;
-    const selectedGlazes = [];
-    document.querySelectorAll('input[name="form-glaze-cb"]:checked').forEach(cb => selectedGlazes.push(cb.value));
-    const mult = parseFloat(document.getElementById("form-multiplier").value) || 3.5;
-    
-    let rows = document.querySelectorAll("#subgroups-list-container .subgroup-row");
-    let tempSubgroups = [];
-    rows.forEach(row => {
-      tempSubgroups.push({
-        type: row.querySelector(".sg-type").value,
-        quantity: parseInt(row.querySelector(".sg-qty").value) || 0,
-        unitWeight: parseFloat(row.querySelector(".sg-weight").value) || 0,
-        unitPrice: 0
-      });
-    });
-    
-    const tempCeramic = { clayId, glazeIds: selectedGlazes, multiplier: mult, subgroups: tempSubgroups, firings: [] };
-    rows.forEach((row, index) => {
-      const sg = tempSubgroups[index];
-      const fullUnitCost = calculateSubgroupFullUnitCost(sg, tempCeramic);
-      const unitMat = calculateUnitMaterialCost(sg.unitWeight, clayId, selectedGlazes);
-      row.querySelector(".sg-mat-cost").value = formatCurrency(fullUnitCost);
-      const priceInput = row.querySelector(".sg-price");
-      if (!priceInput.dataset.manual) priceInput.value = Math.max(unitMat * mult, fullUnitCost * mult).toFixed(2);
-    });
-  };
-  
-  document.getElementById("btn-add-subgroup").addEventListener("click", () => { addRowToSubgroupsContainer(); recalcAllSubgroupsPricing(); });
-  
-  function renderGlazesCheckboxes(selectedIds = []) {
-    const container = document.getElementById("form-glazes-container");
-    container.innerHTML = "";
-    [...appData.colori_smalti, ...appData.cristalline].forEach(g => {
-      const checked = selectedIds.includes(g.id) ? "checked" : "";
-      container.innerHTML += `
-        <label class="multi-checkbox-item">
-          <input type="checkbox" name="form-glaze-cb" value="${g.id}" ${checked} onchange="recalcAllSubgroupsPricing()">
-          <span><span class="color-dot" style="background-color: ${g.color || '#ccc'};"></span>${escapeHtml(g.name)}</span>
-        </label>
-      `;
-    });
-  }
-  
-  window.handlePhotoUpload = (input) => {
-    const file = input.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        document.getElementById("form-photo-url").value = e.target.result;
-        const img = document.getElementById("form-photo-img");
-        img.src = e.target.result;
-        img.style.display = "block";
-        document.getElementById("img-placeholder-text").style.display = "none";
-      }
-      reader.readAsDataURL(file);
-    }
-  };
-  
-  window.clearPhoto = () => {
-    document.getElementById("form-photo-url").value = "";
-    document.getElementById("form-photo-img").style.display = "none";
-    document.getElementById("img-placeholder-text").style.display = "block";
-  };
-  
-  function openCeramicModal(id = null) {
-    const modal = document.getElementById("ceramic-modal");
-    document.getElementById("ceramic-form").reset();
-    document.getElementById("ceramic-id").value = "";
-    clearPhoto();
-    
-    const claySel = document.getElementById("form-clay");
-    claySel.innerHTML = '<option value="">Nessuna</option>';
-    appData.argille.forEach(cl => claySel.innerHTML += `<option value="${cl.id}">${escapeHtml(cl.name)}</option>`);
-    
-    const lotSel1 = document.getElementById("form-fire1-lot");
-    const lotSel2 = document.getElementById("form-fire2-lot");
-    lotSel1.innerHTML = '<option value="">Nessuna</option>';
-    lotSel2.innerHTML = '<option value="">Nessuna</option>';
-    appData.firings.forEach(f => {
-      lotSel1.innerHTML += `<option value="${f.id}">${escapeHtml(f.name)}</option>`;
-      lotSel2.innerHTML += `<option value="${f.id}">${escapeHtml(f.name)}</option>`;
-    });
-    
-    if (id) {
-      document.getElementById("ceramic-modal-title").innerText = "Modifica Lotto";
-      const c = appData.ceramics.find(item => item.id === id);
-      if (c) {
-        document.getElementById("ceramic-id").value = c.id;
-        document.getElementById("form-name").value = c.name || "";
-        document.getElementById("form-creation-date").value = c.creationDate || "";
-        document.getElementById("form-status").value = c.status || "In lavorazione";
-        document.getElementById("form-notes").value = c.notes || "";
-        document.getElementById("form-clay").value = c.clayId || "";
-        document.getElementById("form-fire1-lot").value = c.fire1Id || "";
-        document.getElementById("form-fire2-lot").value = c.fire2Id || "";
-        document.getElementById("form-multiplier").value = c.multiplier || 3.5;
-        if (c.photo) {
-          document.getElementById("form-photo-url").value = c.photo;
-          const img = document.getElementById("form-photo-img");
-          img.src = c.photo;
-          img.style.display = "block";
-          document.getElementById("img-placeholder-text").style.display = "none";
-        }
-        renderSubgroupsInputs(c.subgroups || []);
-        renderGlazesCheckboxes(c.glazeIds || []);
-      }
-    } else {
-      document.getElementById("ceramic-modal-title").innerText = "Nuovo Lotto / Gruppo";
-      document.getElementById("form-creation-date").value = new Date().toISOString().split('T')[0];
-      renderSubgroupsInputs();
-      renderGlazesCheckboxes([]);
-    }
-    modal.classList.add("open");
-  }
-  
-  document.getElementById("save-ceramic-btn").addEventListener("click", () => {
-    const name = document.getElementById("form-name").value.trim();
-    if (!name) return alert("Inserisci un nome.");
-    
-    const id = document.getElementById("ceramic-id").value;
-    const subgroups = [];
-    document.querySelectorAll("#subgroups-list-container .subgroup-row").forEach(row => {
-      subgroups.push({
-        type: row.querySelector(".sg-type").value.trim() || "Pezzo",
-        quantity: parseInt(row.querySelector(".sg-qty").value) || 1,
-        soldQuantity: parseInt(row.querySelector(".sg-sold").value) || 0,
-        unitWeight: parseFloat(row.querySelector(".sg-weight").value) || 0,
-        unitPrice: parseFloat(row.querySelector(".sg-price").value) || 0
-      });
-    });
-    
-    const selectedGlazes = [];
-    document.querySelectorAll('input[name="form-glaze-cb"]:checked').forEach(cb => selectedGlazes.push(cb.value));
-    
-    const obj = {
-      id: id || "c_" + Date.now(),
-      name,
-      creationDate: document.getElementById("form-creation-date").value,
-      status: document.getElementById("form-status").value,
-      notes: document.getElementById("form-notes").value,
-      photo: document.getElementById("form-photo-url").value,
-      clayId: document.getElementById("form-clay").value,
-      glazeIds: selectedGlazes,
-      fire1Id: document.getElementById("form-fire1-lot").value,
-      fire2Id: document.getElementById("form-fire2-lot").value,
-      multiplier: parseFloat(document.getElementById("form-multiplier").value) || 3.5,
-      subgroups
+    <script>
+    // ── DATI ─────────────────────────────────────────
+    const DEFAULTS = {
+        ovens: [{id:"ov1", name:"Forno Grande", lowTempCost:60, highTempCost:100}],
+        argille: [{id:"clay1", name:"Gres Bianco 25kg", kg:25, prezzo:32}],
+        colori_smalti: [{id:"sm1", name:"Smalto Bianco", prezzo:10, quantita:1, color:"#ffffff"}],
+        cristalline: [],
+        firings: [], sales: [], scraps: [], ceramics: []
     };
-    
-    if (id) {
-      const idx = appData.ceramics.findIndex(c => c.id === id);
-      if (idx !== -1) appData.ceramics[idx] = obj;
-    } else {
-      appData.ceramics.push(obj);
+
+    let D = {};
+    let syncConfig = { token: "", gistId: "" };
+
+    function loadSyncConfig() {
+        const conf = localStorage.getItem("ceraapp_sync");
+        if(conf) {
+            try {
+                syncConfig = JSON.parse(conf);
+                document.getElementById("sync-token").value = syncConfig.token || "";
+                document.getElementById("sync-gist-id").value = syncConfig.gistId || "";
+            } catch(e) {}
+        }
     }
-    saveData();
-    document.getElementById("ceramic-modal").classList.remove("open");
-    refreshAll();
-  });
-  
-  window.deleteCeramic = id => { if (confirm("Eliminare?")) { appData.ceramics = appData.ceramics.filter(c => c.id !== id); saveData(); refreshAll(); } };
-  
-  function populateFilterClayOptions() {
-    const select = document.getElementById("filter-clay");
-    select.innerHTML = '<option value="">Tutte</option>';
-    appData.argille.forEach(cl => select.innerHTML += `<option value="${cl.id}">${escapeHtml(cl.name)}</option>`);
-  }
-  
-  document.querySelectorAll("nav button").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".view-section").forEach(s => s.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(btn.getAttribute("data-target")).classList.add("active");
+
+    async function pushToCloud() {
+        if(!syncConfig.token) return;
+        try {
+            const bodyData = {
+                description: "Backup Ceramiche App Cloud",
+                public: false,
+                files: {
+                    "ceramiche_data.json": {
+                        content: JSON.stringify(D, null, 2)
+                    }
+                }
+            };
+            let url = "https://api.github.com/gists";
+            let method = "POST";
+            if(syncConfig.gistId) {
+                url = `https://api.github.com/gists/${syncConfig.gistId}`;
+                method = "PATCH";
+            }
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    "Authorization": `token ${syncConfig.token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(bodyData)
+            });
+            if(res.ok) {
+                const json = await res.json();
+                if(!syncConfig.gistId && json.id) {
+                    syncConfig.gistId = json.id;
+                    document.getElementById("sync-gist-id").value = json.id;
+                    localStorage.setItem("ceraapp_sync", JSON.stringify(syncConfig));
+                }
+                toast("☁️ Sincronizzato con il Cloud!");
+            }
+        } catch(err) {
+            console.error("Errore sync cloud:", err);
+        }
+    }
+
+    async function pullFromCloud() {
+        if(!syncConfig.token || !syncConfig.gistId) {
+            toast("Inserisci Token e Gist ID");
+            return;
+        }
+        try {
+            const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+                headers: { "Authorization": `token ${syncConfig.token}` }
+            });
+            if(res.ok) {
+                const json = await res.json();
+                const file = json.files["ceramiche_data.json"];
+                if(file && file.content) {
+                    const raw = JSON.parse(file.content);
+                    processImportData(raw);
+                    toast("☁️ Dati scaricati dal Cloud!");
+                }
+            } else {
+                toast("⚠ Errore download Cloud");
+            }
+        } catch(err) {
+            toast("⚠ Errore di connessione");
+        }
+    }
+
+    function load() {
+        loadSyncConfig();
+        const s = localStorage.getItem("ceraapp_v2");
+        D = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULTS));
+        ["ovens","argille","colori_smalti","cristalline","firings","sales","scraps","ceramics"]
+            .forEach(k => { if(!D[k]) D[k] = DEFAULTS[k] || []; });
+        
+        if(syncConfig.token && syncConfig.gistId) {
+            pullFromCloudSilent();
+        }
+    }
+
+    async function pullFromCloudSilent() {
+        try {
+            const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+                headers: { "Authorization": `token ${syncConfig.token}` }
+            });
+            if(res.ok) {
+                const json = await res.json();
+                const file = json.files["ceramiche_data.json"];
+                if(file && file.content) {
+                    const raw = JSON.parse(file.content);
+                    processImportData(raw, false);
+                }
+            }
+        } catch(e) {}
+    }
+
+    function save() { 
+        localStorage.setItem("ceraapp_v2", JSON.stringify(D)); 
+        pushToCloud();
+    }
+
+    function uid(p) { return p + "_" + Date.now() + "_" + Math.random().toString(36).slice(2,6); }
+
+    function esc(s) {
+        return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    function fmt(v) {
+        const n = parseFloat(v) || 0;
+        if(n >= 1000) return "€" + (n/1000).toFixed(1).replace('.',',') + "k";
+        return "€" + n.toFixed(2).replace('.',',');
+    }
+
+    function today() { return new Date().toISOString().split("T")[0]; }
+
+    // ── CALCOLI ──────────────────────────────────────
+    function totalPieces(c) {
+        return (c.subgroups||[]).reduce((a,sg) => a + (sg.quantity||0), 0);
+    }
+    function remainingPieces(c) {
+        return (c.subgroups||[]).reduce((a,sg) =>
+            a + Math.max(0,(sg.quantity||0)-(sg.soldQuantity||0)-(sg.scrappedQuantity||0)), 0);
+    }
+    function unitMatCost(w, clayId, glazes) {
+        glazes = glazes || [];
+        let matCost = 0;
+        const kg = w / 1000;
+        if(clayId) {
+            const cl = D.argille.find(x=>x.id===clayId);
+            if(cl && cl.kg>0) matCost += (cl.prezzo/cl.kg)*kg;
+        }
+        const all = [...D.colori_smalti,...D.cristalline];
+        glazes.forEach(function(gId) {
+            const p = all.find(x=>x.id===gId);
+            if(p) matCost += (p.prezzo/20)*(kg>0?kg:0.1);
+        });
+        return matCost;
+    }
+    function fireCostPerPiece(c) {
+        const tot = Math.max(1, totalPieces(c));
+        let fire = 0;
+        [c.fire1Id,c.fire2Id].filter(Boolean).forEach(function(fId) {
+            const f = D.firings.find(x=>x.id===fId);
+            if(f) fire += f.totalCost;
+        });
+        return fire / tot;
+    }
+    function unitFullCost(sg, c) {
+        return unitMatCost(sg.unitWeight||0, c.clayId, c.glazeIds) + fireCostPerPiece(c);
+    }
+    function sgPrice(sg, c) {
+        if(sg.unitPrice>0) return sg.unitPrice;
+        return unitFullCost(sg,c) * (c.multiplier||3.5);
+    }
+    function lotPrice(c) {
+        return (c.subgroups||[]).reduce(function(a,sg){return a+sgPrice(sg,c)*(sg.quantity||0);},0);
+    }
+    function lotCost(c) {
+        return (c.subgroups||[]).reduce(function(a,sg){return a+unitFullCost(sg,c)*(sg.quantity||0);},0);
+    }
+
+    // ── TOAST ────────────────────────────────────────
+    function toast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg; t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    // ── CONFIRM ──────────────────────────────────────
+    function confirm(title, msg) {
+        return new Promise(resolve => {
+            document.getElementById("confirm-title").textContent = title;
+            document.getElementById("confirm-msg").textContent = msg || "Questa azione non può essere annullata.";
+            openModal("confirm-modal");
+            const ok = document.getElementById("confirm-ok");
+            const cancel = document.getElementById("confirm-cancel");
+            const cleanup = () => { closeModal("confirm-modal"); ok.onclick=null; cancel.onclick=null; };
+            ok.onclick = () => { cleanup(); resolve(true); };
+            cancel.onclick = () => { cleanup(); resolve(false); };
+        });
+    }
+
+    // ── MODALI ───────────────────────────────────────
+    function openModal(id) {
+        document.getElementById(id).classList.add("open");
+        document.body.style.overflow = "hidden";
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+        document.body.style.overflow = "";
+    }
+
+    // ── TAB ──────────────────────────────────────────
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const target = btn.dataset.view;
+            document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+            document.querySelectorAll(".view-section").forEach(s=>s.classList.remove("active"));
+            btn.classList.add("active");
+            document.getElementById(target).classList.add("active");
+            if(target === "view-lots") renderLots();
+        });
     });
-  });
-  
-  document.getElementById("btn-new-ceramic").addEventListener("click", () => openCeramicModal());
-  document.getElementById("close-ceramic-modal").addEventListener("click", () => document.getElementById("ceramic-modal").classList.remove("open"));
-  document.getElementById("close-ceramic-modal-btn").addEventListener("click", () => document.getElementById("ceramic-modal").classList.remove("open"));
-  
-  ["filter-search", "filter-status", "filter-clay"].forEach(id => {
-    document.getElementById(id).addEventListener(id === "filter-search" ? "input" : "change", () => renderCeramics());
-  });
-  
-  function refreshAll() {
-    populateFilterClayOptions();
-    updateDashboard();
-    renderCeramics();
-    renderFiringsTable();
-    renderScrapsTable();
-    renderSettingsTables();
-  }
-  
-  function escapeHtml(str) {
-    if (!str) return "";
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-  
-  loadData();
-  refreshAll();
-  </script>
+
+    // Swipe per chiudere le modali
+    document.querySelectorAll(".modal-overlay").forEach(overlay => {
+        const sheet = overlay.querySelector(".modal-sheet");
+        let startY = 0, isDragging = false;
+        const handle = overlay.querySelector(".modal-handle");
+        if(!handle) return;
+        handle.addEventListener("touchstart", e => { startY = e.touches[0].clientY; isDragging = true; }, {passive:true});
+        document.addEventListener("touchmove", e => {
+            if(!isDragging) return;
+            const dy = e.touches[0].clientY - startY;
+            if(dy > 0) sheet.style.transform = `translateY(${dy}px)`;
+        }, {passive:true});
+        document.addEventListener("touchend", e => {
+            if(!isDragging) return; isDragging = false;
+            const dy = e.changedTouches[0].clientY - startY;
+            sheet.style.transform = "";
+            if(dy > 80) closeModal(overlay.id);
+        });
+        overlay.addEventListener("click", e => { if(e.target === overlay) closeModal(overlay.id); });
+    });
+
+    ["lot","sale","scrap","firing","material"].forEach(k => {
+        document.getElementById(`close-${k}-modal`).onclick = () => closeModal(`${k}-modal`);
+        document.getElementById(`close-${k}-modal-btn`).onclick = () => closeModal(`${k}-modal`);
+    });
+
+    // ── RENDER DASHBOARD ─────────────────────────────
+    function renderDashboard() {
+        const lots = D.ceramics.length;
+        let pz=0, cost=0, pot=0, sales=0;
+        D.ceramics.forEach(c => {
+            pz += totalPieces(c);
+            cost += lotCost(c);
+            if(c.status !== "Venduta") pot += lotPrice(c);
+        });
+        D.sales.forEach(s => sales += (s.totalPrice||0));
+        document.getElementById("ds-lots").textContent = lots;
+        document.getElementById("ds-pieces").textContent = pz;
+        document.getElementById("ds-cost").textContent = fmt(cost);
+        document.getElementById("ds-unit-cost").textContent = pz>0 ? fmt(cost/pz) : "€0";
+        document.getElementById("ds-potential").textContent = fmt(pot);
+        document.getElementById("ds-margin").textContent = cost>0&&pot>0 ? (((pot-cost)/pot)*100).toFixed(0)+"%" : "0%";
+        document.getElementById("ds-sales").textContent = fmt(sales);
+
+        const waiting = D.ceramics.filter(c=>c.status==="Da cuocere").length;
+        const banner = document.getElementById("kiln-banner");
+        if(waiting>0) { banner.classList.remove("hidden"); document.getElementById("kiln-count").textContent=waiting; }
+        else banner.classList.add("hidden");
+    }
+
+    // ── RENDER LOTTI ─────────────────────────────────
+    let filterStatus = "", filterClay = "";
+
+    function renderLots() {
+        renderDashboard();
+        const q = document.getElementById("search-input").value.toLowerCase();
+        const clayFilter = document.getElementById("clay-filter");
+        filterClay = clayFilter.value;
+
+        const prevClay = filterClay;
+        clayFilter.innerHTML = '<option value="">Tutte le argille</option>';
+        D.argille.forEach(a => {
+            const opt = document.createElement("option");
+            opt.value = a.id; opt.textContent = a.name;
+            clayFilter.appendChild(opt);
+        });
+        if(prevClay) clayFilter.value = prevClay;
+
+        const filtered = D.ceramics.filter(c => {
+            if(filterStatus && c.status !== filterStatus) return false;
+            if(filterClay && c.clayId !== filterClay) return false;
+            if(q && !c.name.toLowerCase().includes(q)) return false;
+            return true;
+        });
+
+        const container = document.getElementById("lots-list");
+
+        if(filtered.length === 0) {
+            container.innerHTML = `<div class="empty-state"><div class="empty-icon">🏺</div><div class="empty-label">Nessun lotto trovato.<br>Premi + per aggiungerne uno.</div></div>`;
+            return;
+        }
+
+        container.innerHTML = filtered.map(c => {
+            const clay = D.argille.find(x=>x.id===c.clayId);
+            const rem = remainingPieces(c);
+            const tot = totalPieces(c);
+            const price = lotPrice(c);
+            const cost = lotCost(c);
+            const soldCount = (D.sales||[]).filter(s=>s.ceramicId===c.id).reduce((a,s)=>a+(s.quantity||0),0);
+            const thumb = c.photo
+                ? `<img src="${c.photo}" onerror="this.parentElement.innerHTML='🏺'">`
+                : `🏺`;
+            const badgeClass = "badge-" + c.status.replace(/ /g,".");
+            const sgs = (c.subgroups||[]).map(sg => {
+                const uCost = unitFullCost(sg, c);
+                const uPrice = sgPrice(sg, c);
+                const isPriceManual = sg.unitPrice > 0;
+                return `<div class="sg-pill">
+                    <span style="font-weight:600;">${esc(sg.type)}</span>
+                    <span style="color:var(--ink-muted)"> × ${sg.quantity}</span>
+                    <span style="margin-left:0.3rem;">· costo ${fmt(uCost)}/pz</span>
+                    <span style="color:var(--clay-dark);font-weight:600;"> → ${fmt(uPrice)}/pz${isPriceManual?' <span title="Prezzo manuale" style="font-size:0.65rem;">✎</span>':''}</span>
+                </div>`;
+            }).join("");
+
+            const segs = Math.min(tot,5);
+            const soldSegs = segs>0 ? Math.round((soldCount/tot)*segs) : 0;
+            const activeSegs = segs - soldSegs;
+            const progressBar = Array.from({length:segs},(_,i)=>
+                `<div class="lot-progress-seg ${i<soldSegs?'sold':'active'}"></div>`
+            ).join("");
+
+            return `
+            <div class="lot-card" id="lc-${c.id}">
+                <div class="lot-card-main" onclick="toggleLotExpand('${c.id}')">
+                    <div class="lot-thumb">${thumb}</div>
+                    <div class="lot-info">
+                        <div class="lot-name">${esc(c.name)}</div>
+                        <div class="lot-meta">
+                            <span class="badge ${badgeClass}">${c.status}</span>
+                            ${clay ? `<span>·</span><span>${esc(clay.name)}</span>` : ""}
+                        </div>
+                    </div>
+                    <div class="lot-price-row">
+                        <div class="lot-price-label">costo</div>
+                        <div class="lot-price">${fmt(cost)}</div>
+                        <div class="lot-pieces">${rem}/${tot} pz</div>
+                        <div class="lot-pieces" style="color:var(--clay-mid);font-weight:600;">vendita ${fmt(price)}</div>
+                    </div>
+                </div>
+                ${tot>0 ? `<div class="lot-card-footer"><div class="lot-progress">${progressBar}</div><span style="font-size:0.72rem;color:var(--ink-muted);">${soldCount} venduti</span></div>` : ""}
+                <div class="lot-expanded" id="exp-${c.id}">
+                    ${sgs ? `<div class="lot-expanded-title">Sottogruppi</div><div class="sg-pill-list">${sgs}</div>` : ""}
+                    <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--dust);display:flex;flex-wrap:wrap;gap:0.75rem;font-size:0.78rem;color:var(--ink-muted);">
+                        <span>Costo tot: <strong style="color:var(--ink);">${fmt(cost)}</strong></span>
+                        <span>Prezzo tot: <strong style="color:var(--clay-dark);">${fmt(price)}</strong></span>
+                        <span>Margine: <strong style="color:var(--success);">${cost>0?(((price-cost)/price)*100).toFixed(0):0}%</strong></span>
+                        ${fireCostPerPiece(c)>0?`<span>Cottura/pz: <strong>${fmt(fireCostPerPiece(c))}</strong></span>`:''}
+                    </div>
+                    <div class="lot-actions-row">
+                        <button class="btn btn-subtle btn-sm" onclick="openLotModal('${c.id}'); event.stopPropagation()">Modifica</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteLot('${c.id}'); event.stopPropagation()">Elimina</button>
+                    </div>
+                </div>
+            </div>`;
+        }).join("");
+    }
+
+    window.toggleLotExpand = function(id) {
+        document.getElementById("exp-"+id).classList.toggle("open");
+    };
+
+    document.getElementById("status-chips").addEventListener("click", e => {
+        if(!e.target.classList.contains("filter-chip")) return;
+        document.querySelectorAll(".filter-chip").forEach(c=>c.classList.remove("active"));
+        e.target.classList.add("active");
+        filterStatus = e.target.dataset.status;
+        renderLots();
+    });
+    document.getElementById("search-input").addEventListener("input", renderLots);
+    document.getElementById("clay-filter").addEventListener("change", renderLots);
+
+    // ── MODALE LOTTO ─────────────────────────────────
+    function openLotModal(id=null) {
+        document.getElementById("lot-id").value = "";
+        document.getElementById("lot-name").value = "";
+        document.getElementById("lot-date").value = today();
+        document.getElementById("lot-status").value = "In lavorazione";
+        document.getElementById("lot-notes").value = "";
+        document.getElementById("lot-multiplier").value = "3.5";
+        document.getElementById("lot-photo-url").value = "";
+        document.getElementById("lot-photo-img").style.display="none";
+        document.getElementById("photo-label").textContent="Aggiungi";
+
+        const claySel = document.getElementById("lot-clay");
+        claySel.innerHTML = '<option value="">Nessuna</option>';
+        D.argille.forEach(a => { const o=document.createElement("option"); o.value=a.id; o.textContent=a.name; claySel.appendChild(o); });
+
+        const f1=document.getElementById("lot-fire1"), f2=document.getElementById("lot-fire2");
+        f1.innerHTML=f2.innerHTML='<option value="">Nessuna</option>';
+        D.firings.forEach(f => {
+            [f1,f2].forEach(sel => { const o=document.createElement("option"); o.value=f.id; o.textContent=f.name+" ("+f.date+")"; sel.appendChild(o); });
+        });
+
+        const gg=document.getElementById("glaze-grid");
+        gg.innerHTML = "";
+        [...D.colori_smalti,...D.cristalline].forEach(g => {
+            const label=document.createElement("label");
+            label.className="glaze-item";
+            label.innerHTML=`<input type="checkbox" name="glaze-cb" value="${g.id}"><span class="color-dot" style="background:${g.color||'#ccc'}"></span>${esc(g.name)}`;
+            gg.appendChild(label);
+        });
+
+        if(id) {
+            const c=D.ceramics.find(x=>x.id===id);
+            if(c){
+                document.getElementById("lot-id").value=c.id;
+                document.getElementById("lot-name").value=c.name;
+                document.getElementById("lot-date").value=c.creationDate||"";
+                document.getElementById("lot-status").value=c.status;
+                document.getElementById("lot-notes").value=c.notes||"";
+                document.getElementById("lot-clay").value=c.clayId||"";
+                document.getElementById("lot-multiplier").value=c.multiplier||3.5;
+                document.getElementById("lot-fire1").value=c.fire1Id||"";
+                document.getElementById("lot-fire2").value=c.fire2Id||"";
+                if(c.photo){ document.getElementById("lot-photo-url").value=c.photo; document.getElementById("lot-photo-img").src=c.photo; document.getElementById("lot-photo-img").style.display="block"; document.getElementById("photo-label").textContent=""; }
+                gg.querySelectorAll('input[name="glaze-cb"]').forEach(cb => { cb.checked=(c.glazeIds||[]).includes(cb.value); });
+                renderSgRows(c.subgroups||[]);
+                document.getElementById("lot-modal-title").textContent="Modifica Lotto";
+            }
+        } else {
+            renderSgRows([{type:"Pezzo",quantity:4,unitWeight:200,unitPrice:0}]);
+            document.getElementById("lot-modal-title").textContent="Nuovo Lotto";
+        }
+        openModal("lot-modal");
+    }
+
+    function renderSgRows(rows) {
+        const container=document.getElementById("sg-rows");
+        container.innerHTML=rows.map(sg=>`
+            <div class="sg-row">
+                <input type="text" class="sg-type" value="${esc(sg.type)}" placeholder="Tipo">
+                <input type="number" class="sg-qty" value="${sg.quantity||1}" min="1">
+                <input type="number" class="sg-weight" value="${sg.unitWeight||0}" min="0">
+                <input type="number" class="sg-price" value="${sg.unitPrice||0}" min="0" step="0.5">
+                <button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>
+            </div>
+        `).join("");
+    }
+
+    document.getElementById("btn-add-sg").addEventListener("click", () => {
+        const container=document.getElementById("sg-rows");
+        const row=document.createElement("div");
+        row.className="sg-row";
+        row.innerHTML=`<input type="text" class="sg-type" value="Pezzo" placeholder="Tipo"><input type="number" class="sg-qty" value="1" min="1"><input type="number" class="sg-weight" value="150" min="0"><input type="number" class="sg-price" value="0" min="0" step="0.5"><button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>`;
+        container.appendChild(row);
+    });
+
+    document.getElementById("lot-photo-file").addEventListener("change", function() {
+        if(!this.files[0]) return;
+        const r=new FileReader();
+        r.onload = e => {
+            document.getElementById("lot-photo-url").value=e.target.result;
+            document.getElementById("lot-photo-img").src=e.target.result;
+            document.getElementById("lot-photo-img").style.display="block";
+            document.getElementById("photo-label").textContent="";
+        };
+        r.readAsDataURL(this.files[0]);
+    });
+
+    document.getElementById("save-lot-btn").addEventListener("click", () => {
+        const name=document.getElementById("lot-name").value.trim();
+        if(!name){document.getElementById("lot-name").focus(); toast("Inserisci il nome del lotto"); return;}
+
+        const sgs=[];
+        document.querySelectorAll("#sg-rows .sg-row").forEach(row=>{
+            sgs.push({
+                type: row.querySelector(".sg-type").value||"Pezzo",
+                quantity: parseInt(row.querySelector(".sg-qty").value)||1,
+                unitWeight: parseFloat(row.querySelector(".sg-weight").value)||0,
+                unitPrice: parseFloat(row.querySelector(".sg-price").value)||0,
+                soldQuantity: 0, scrappedQuantity: 0
+            });
+        });
+
+        const glazes=[];
+        document.querySelectorAll('input[name="glaze-cb"]:checked').forEach(cb=>glazes.push(cb.value));
+
+        const id=document.getElementById("lot-id").value;
+        const obj={
+            id: id||uid("c"),
+            name,
+            creationDate: document.getElementById("lot-date").value,
+            status: document.getElementById("lot-status").value,
+            notes: document.getElementById("lot-notes").value,
+            photo: document.getElementById("lot-photo-url").value,
+            clayId: document.getElementById("lot-clay").value,
+            glazeIds: glazes,
+            multiplier: parseFloat(document.getElementById("lot-multiplier").value)||3.5,
+            fire1Id: document.getElementById("lot-fire1").value,
+            fire2Id: document.getElementById("lot-fire2").value,
+            subgroups: sgs
+        };
+
+        if(id){ const i=D.ceramics.findIndex(x=>x.id===id); if(i!==-1) D.ceramics[i]=obj; else D.ceramics.push(obj); }
+        else D.ceramics.push(obj);
+
+        save(); closeModal("lot-modal"); renderAll(); toast("Lotto salvato ✓");
+    });
+
+    document.getElementById("btn-header-add").addEventListener("click", ()=>{ switchView("view-lots"); openLotModal(); });
+    window.openLotModal = openLotModal;
+
+    window.deleteLot = async function(id) {
+        const c=D.ceramics.find(x=>x.id===id);
+        if(!(await confirm("Eliminare "+c.name+"?", "Anche le vendite e gli scarti collegati resteranno in memoria."))) return;
+        D.ceramics=D.ceramics.filter(x=>x.id!==id);
+        save(); renderAll(); toast("Lotto eliminato");
+    };
+
+    // ── VENDITE ──────────────────────────────────────
+    function renderSales() {
+        const list=document.getElementById("sales-list");
+        if(!D.sales.length){
+            list.innerHTML=`<div class="empty-state"><div class="empty-icon">💶</div><div class="empty-label">Nessuna vendita registrata.</div></div>`;
+            return;
+        }
+        list.innerHTML=D.sales.slice().reverse().map(s=>{
+            const c=D.ceramics.find(x=>x.id===s.ceramicId);
+            return `<div class="entry-card">
+                <div class="entry-card-info">
+                    <div class="entry-main">${c?esc(c.name):"Lotto rimosso"}</div>
+                    <div class="entry-meta">${s.date} · ${s.quantity} pz ${s.notes?'· '+esc(s.notes):''}</div>
+                </div>
+                <div class="entry-value green">${fmt(s.totalPrice)}</div>
+                <button class="btn btn-danger btn-sm" onclick="deleteSale('${s.id}')" style="margin-left:0.25rem;">&times;</button>
+            </div>`;
+        }).join("");
+    }
+
+    document.getElementById("btn-new-sale").addEventListener("click", ()=>{
+        document.getElementById("sale-date").value=today();
+        document.getElementById("sale-qty").value=1;
+        document.getElementById("sale-price").value="";
+        document.getElementById("sale-notes").value="";
+        const sel=document.getElementById("sale-ceramic");
+        sel.innerHTML='<option value="">Seleziona lotto…</option>';
+        D.ceramics.forEach(c=>{const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; sel.appendChild(o);});
+        openModal("sale-modal");
+    });
+
+    document.getElementById("save-sale-btn").addEventListener("click", ()=>{
+        const ceramicId=document.getElementById("sale-ceramic").value;
+        const price=parseFloat(document.getElementById("sale-price").value)||0;
+        if(!ceramicId){toast("Seleziona un lotto"); return;}
+        D.sales.push({id:uid("s"), date:document.getElementById("sale-date").value, ceramicId, quantity:parseInt(document.getElementById("sale-qty").value)||1, totalPrice:price, notes:document.getElementById("sale-notes").value});
+        save(); closeModal("sale-modal"); renderAll(); toast("Vendita registrata ✓");
+    });
+
+    window.deleteSale = async function(id) {
+        if(!(await confirm("Eliminare questa vendita?"))) return;
+        D.sales=D.sales.filter(x=>x.id!==id); save(); renderAll(); toast("Vendita eliminata");
+    };
+
+    // ── SCARTI ───────────────────────────────────────
+    function renderScraps() {
+        const list=document.getElementById("scraps-list");
+        if(!D.scraps.length){
+            list.innerHTML=`<div class="empty-state"><div class="empty-icon">💔</div><div class="empty-label">Nessun scarto registrato.</div></div>`;
+            return;
+        }
+        list.innerHTML=D.scraps.slice().reverse().map(sc=>{
+            const c=D.ceramics.find(x=>x.id===sc.ceramicId);
+            return `<div class="entry-card">
+                <div class="entry-card-info">
+                    <div class="entry-main">${c?esc(c.name):"Lotto rimosso"}</div>
+                    <div class="entry-meta">${sc.date} · ${esc(sc.phase)}</div>
+                </div>
+                <div class="entry-value red">${sc.quantity} pz</div>
+                <button class="btn btn-danger btn-sm" onclick="deleteScrap('${sc.id}')" style="margin-left:0.25rem;">&times;</button>
+            </div>`;
+        }).join("");
+    }
+
+    document.getElementById("btn-new-scrap").addEventListener("click", ()=>{
+        document.getElementById("scrap-date").value=today();
+        document.getElementById("scrap-qty").value=1;
+        const sel=document.getElementById("scrap-ceramic");
+        sel.innerHTML='<option value="">Seleziona lotto…</option>';
+        D.ceramics.forEach(c=>{const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; sel.appendChild(o);});
+        openModal("scrap-modal");
+    });
+
+    document.getElementById("save-scrap-btn").addEventListener("click", ()=>{
+        const ceramicId=document.getElementById("scrap-ceramic").value;
+        if(!ceramicId){toast("Seleziona un lotto"); return;}
+        D.scraps.push({id:uid("sc"), date:document.getElementById("scrap-date").value, ceramicId, quantity:parseInt(document.getElementById("scrap-qty").value)||1, phase:document.getElementById("scrap-phase").value});
+        save(); closeModal("scrap-modal"); renderAll(); toast("Scarto registrato ✓");
+    });
+
+    window.deleteScrap = async function(id) {
+        if(!(await confirm("Eliminare questo scarto?"))) return;
+        D.scraps=D.scraps.filter(x=>x.id!==id); save(); renderAll(); toast("Scarto eliminato");
+    };
+
+    // ── COTTURE ──────────────────────────────────────
+    function renderFirings() {
+        const list=document.getElementById("firings-list");
+        if(!D.firings.length){
+            list.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-label">Nessuna cottura registrata.</div></div>`;
+            return;
+        }
+        list.innerHTML=D.firings.slice().reverse().map(f=>{
+            const ov=D.ovens.find(x=>x.id===f.ovenId);
+            return `<div class="entry-card">
+                <div class="entry-card-info">
+                    <div class="entry-main">${esc(f.name)}</div>
+                    <div class="entry-meta">${f.date} · ${esc(f.type)} ${ov?"· "+esc(ov.name):""}</div>
+                </div>
+                <div class="entry-value">${fmt(f.totalCost)}</div>
+                <button class="btn btn-danger btn-sm" onclick="deleteFiring('${f.id}')" style="margin-left:0.25rem;">&times;</button>
+            </div>`;
+        }).join("");
+    }
+
+    document.getElementById("btn-new-firing").addEventListener("click", ()=>{
+        document.getElementById("firing-name").value="";
+        document.getElementById("firing-date").value=today();
+        document.getElementById("firing-cost").value="";
+        const sel=document.getElementById("firing-oven");
+        sel.innerHTML='<option value="">Seleziona forno…</option>';
+        D.ovens.forEach(o=>{const op=document.createElement("option"); op.value=o.id; op.textContent=o.name; sel.appendChild(op);});
+        openModal("firing-modal");
+    });
+
+    document.getElementById("save-firing-btn").addEventListener("click", ()=>{
+        const name=document.getElementById("firing-name").value.trim();
+        if(!name){toast("Inserisci il nome della cottura"); return;}
+        D.firings.push({id:uid("f"), name, date:document.getElementById("firing-date").value, ovenId:document.getElementById("firing-oven").value, type:document.getElementById("firing-type").value, totalCost:parseFloat(document.getElementById("firing-cost").value)||0});
+        save(); closeModal("firing-modal"); renderAll(); toast("Cottura salvata ✓");
+    });
+
+    document.getElementById("btn-quick-firing").addEventListener("click", ()=>{
+        document.getElementById("firing-name").value="Cottura " + today();
+        document.getElementById("firing-date").value=today();
+        document.getElementById("firing-cost").value="";
+        const sel=document.getElementById("firing-oven");
+        sel.innerHTML='<option value="">Seleziona forno…</option>';
+        D.ovens.forEach(o=>{const op=document.createElement("option"); op.value=o.id; op.textContent=o.name; sel.appendChild(op);});
+        openModal("firing-modal");
+    });
+
+    window.deleteFiring = async function(id) {
+        if(!(await confirm("Eliminare questa cottura?"))) return;
+        D.firings=D.firings.filter(x=>x.id!==id); save(); renderAll(); toast("Cottura eliminata");
+    };
+
+    // ── IMPOSTAZIONI ─────────────────────────────────
+    document.getElementById("btn-sync-save").addEventListener("click", () => {
+        syncConfig.token = document.getElementById("sync-token").value.trim();
+        syncConfig.gistId = document.getElementById("sync-gist-id").value.trim();
+        localStorage.setItem("ceraapp_sync", JSON.stringify(syncConfig));
+        pushToCloud();
+    });
+
+    document.getElementById("btn-sync-pull").addEventListener("click", () => {
+        syncConfig.token = document.getElementById("sync-token").value.trim();
+        syncConfig.gistId = document.getElementById("sync-gist-id").value.trim();
+        localStorage.setItem("ceraapp_sync", JSON.stringify(syncConfig));
+        pullFromCloud();
+    });
+
+    function renderSettings() {
+        const ovRows=document.getElementById("ovens-rows");
+        ovRows.innerHTML=D.ovens.length?D.ovens.map(o=>`<div class="settings-row"><span class="settings-row-name">${esc(o.name)}</span><span class="settings-row-value">${fmt(o.lowTempCost)}</span></div>`).join(""):"<div class='settings-row' style='color:var(--ink-muted)'>Nessun forno</div>";
+
+        const clRows=document.getElementById("clays-rows");
+        clRows.innerHTML=D.argille.length?D.argille.map(a=>`<div class="settings-row"><span class="settings-row-name">${esc(a.name)}</span><span class="settings-row-value">${fmt(a.prezzo)} / ${a.kg}kg</span></div>`).join(""):"<div class='settings-row' style='color:var(--ink-muted)'>Nessuna argilla</div>";
+
+        const glRows=document.getElementById("glazes-rows");
+        glRows.innerHTML=[...D.colori_smalti,...D.cristalline].length?[...D.colori_smalti,...D.cristalline].map(g=>`<div class="settings-row"><span class="settings-row-name" style="display:flex;align-items:center;gap:0.4rem;"><span class="color-dot" style="background:${g.color||'#ccc'}"></span>${esc(g.name)}</span><span class="settings-row-value">${fmt(g.prezzo)}</span></div>`).join(""):"<div class='settings-row' style='color:var(--ink-muted)'>Nessun smalto</div>";
+    }
+
+    function openMaterialModal(type) {
+        document.getElementById("mat-type").value=type;
+        document.getElementById("mat-name").value="";
+        document.getElementById("mat-unit").value="1";
+        document.getElementById("mat-price").value="";
+        document.getElementById("mat-color").value="#9e5338";
+        document.getElementById("mat-color-wrap").style.display="none";
+        document.getElementById("mat-kg-wrap").style.display="flex";
+
+        const titles={oven:"Aggiungi Forno",clay:"Aggiungi Argilla",glaze:"Aggiungi Smalto"};
+        const units={oven:"Costo bassa temp. (€)", clay:"Kg per confezione"};
+        document.getElementById("material-modal-title").textContent=titles[type];
+        document.getElementById("mat-unit-label").textContent=units[type]||"Quantità (kg)";
+        if(type==="oven") document.getElementById("mat-kg-wrap").style.display="none";
+        if(type==="glaze") document.getElementById("mat-color-wrap").style.display="flex";
+        openModal("material-modal");
+    }
+
+    document.getElementById("btn-add-oven").onclick=()=>openMaterialModal("oven");
+    document.getElementById("btn-add-clay").onclick=()=>openMaterialModal("clay");
+    document.getElementById("btn-add-glaze").onclick=()=>openMaterialModal("glaze");
+
+    document.getElementById("save-material-btn").addEventListener("click", ()=>{
+        const type=document.getElementById("mat-type").value;
+        const name=document.getElementById("mat-name").value.trim();
+        if(!name){toast("Inserisci il nome"); return;}
+        const price=parseFloat(document.getElementById("mat-price").value)||0;
+        const unit=parseFloat(document.getElementById("mat-unit").value)||1;
+
+        if(type==="oven") D.ovens.push({id:uid("ov"),name,lowTempCost:price,highTempCost:price*1.5});
+        else if(type==="clay") D.argille.push({id:uid("cl"),name,kg:unit,prezzo:price});
+        else if(type==="glaze") D.colori_smalti.push({id:uid("sm"),name,prezzo:price,quantita:unit,color:document.getElementById("mat-color").value});
+
+        save(); closeModal("material-modal"); renderAll(); toast("Salvato ✓");
+    });
+
+    function processImportData(raw, notify=true) {
+        const imported = {
+            ovens: raw.ovens || [],
+            argille: raw.argille || [],
+            colori_smalti: raw.colori_smalti || [],
+            cristalline: raw.cristalline || [],
+            attrezzature_costi: raw.attrezzature_costi || [],
+            firings: raw.firings || [],
+            sales: raw.sales || [],
+            scraps: raw.scraps || [],
+            ceramics: (raw.ceramics || []).map(c => ({
+                ...c,
+                fire1Id: c.fire1Id || c.fire1Lot || "",
+                fire2Id: c.fire2Id || c.fire2Lot || "",
+                glazeIds: c.glazeIds || [],
+                multiplier: c.multiplier || 3.5,
+                subgroups: (c.subgroups || []).map(sg => ({
+                    type: sg.type || "Pezzo",
+                    quantity: sg.quantity || 0,
+                    soldQuantity: sg.soldQuantity || 0,
+                    scrappedQuantity: sg.scrappedQuantity || 0,
+                    unitWeight: sg.unitWeight || 0,
+                    unitPrice: sg.unitPrice || 0
+                }))
+            }))
+        };
+        if(!Array.isArray(imported.ceramics)) throw new Error("Struttura non valida");
+        D = imported;
+        save(); 
+        renderAll(); 
+        if(notify) toast("Importazione completata ✓");
+    }
+
+    // Backup
+    document.getElementById("btn-export").addEventListener("click", ()=>{
+        const blob=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
+        const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+        a.download="ceramiche-backup-"+today()+".json"; a.click();
+        toast("Backup esportato ✓");
+    });
+    document.getElementById("btn-import").addEventListener("click", ()=>document.getElementById("import-file-input").click());
+    document.getElementById("import-file-input").addEventListener("change", function(){
+        if(!this.files[0]) return;
+        const r=new FileReader();
+        r.onload=e=>{
+            try{ processImportData(JSON.parse(e.target.result)); }
+            catch(err){ toast("⚠ File non valido: " + err.message); }
+        };
+        r.readAsText(this.files[0]);
+        this.value="";
+    });
+
+    function switchView(id) {
+        document.querySelectorAll(".view-section").forEach(s=>s.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        document.querySelector(`.tab-btn[data-view="${id}"]`).classList.add("active");
+    }
+
+    function renderAll() {
+        renderDashboard();
+        renderLots();
+        renderSales();
+        renderScraps();
+        renderFirings();
+        renderSettings();
+    }
+
+    load();
+    renderAll();
+    </script>
 </body>
 </html>
