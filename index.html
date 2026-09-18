@@ -131,6 +131,7 @@
     <nav>
       <button class="nav-btn active" data-target="ceramics-view">Lotti / Ceramiche</button>
       <button class="nav-btn" data-target="firings-view">Cotture</button>
+      <button class="nav-btn" data-target="scraps-view">Rotture & Scarti</button>
       <button class="nav-btn" data-target="settings-view">Impostazioni</button>
     </nav>
   </header>
@@ -172,6 +173,7 @@
             <input type="text" id="filter-search" placeholder="Cerca per nome lotto, argilla...">
           </div>
           <button class="btn" id="btn-new-ceramic">+ Nuovo Lotto / Gruppo</button>
+          <button class="btn btn-secondary" id="btn-new-scrap">+ Registra Scarto</button>
         </div>
         <div class="filters-row">
           <div class="filter-group">
@@ -252,6 +254,38 @@
             </tr>
           </thead>
           <tbody id="firings-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SCRAPS VIEW -->
+    <section id="scraps-view" class="view-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2>Rotture & Scarti di Laboratorio</h2>
+        <button class="btn" id="btn-new-scrap-tab">+ Registra Scarto</button>
+      </div>
+      <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+        <div class="stat-card">
+          <div class="label">Pezzi Scartati Totali</div>
+          <div class="value" id="dash-total-scraps">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Costo Perso in Scarti</div>
+          <div class="value" id="dash-total-scraps-cost">€0,00</div>
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Lotto / Origine</th>
+              <th>Fase di Scarto</th>
+              <th>Quantità</th>
+              <th>Costo Stimato Perso</th>
+              <th style="text-align: right;">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="scraps-tbody"></tbody>
         </table>
       </div>
     </section>
@@ -358,9 +392,7 @@
           </div>
           
           <div class="form-section">
-            <h3>Sottogruppi / Pezzi (con calcolo automatico materiali e vendite parziali)</h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">Il costo include peso argilla, smalti, quota doppia cottura e attrezzatura. Il prezzo consigliato per pezzo si calcola moltiplicando il costo unitario totale per il moltiplicatore Etsy.</p>
-            
+            <h3>Sottogruppi / Pezzi</h3>
             <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.75rem;">
               <div class="form-group" style="flex: 0 0 200px;">
                 <label>Moltiplicatore Prezzo (Etsy)</label>
@@ -382,22 +414,20 @@
           </div>
           
           <div class="form-section">
-            <h3>Materiali e Doppia Cottura (Aggiornamento Live Costi)</h3>
+            <h3>Materiali e Doppia Cottura</h3>
             <div class="form-grid">
               <div class="form-group"><label>Argilla principale</label><select id="form-clay" onchange="recalcAllSubgroupsPricing()"><option value="">Nessuna</option></select></div>
               <div class="form-group full-width">
-                <label>Colori, Smalti e Cristalline usati (Seleziona uno o più)</label>
+                <label>Colori, Smalti e Cristalline usati</label>
                 <div class="multi-checkbox-container" id="form-glazes-container"></div>
               </div>
               <div class="form-group">
                 <label>1ª Cottura (es. Biscottatura)</label>
                 <select id="form-fire1-lot" onchange="recalcAllSubgroupsPricing()"><option value="">Nessuna</option></select>
-                <span style="font-size: 0.75rem; color: var(--success);" id="live-fire1-cost"></span>
               </div>
               <div class="form-group">
                 <label>2ª Cottura (es. Alta Temp. / Smalto)</label>
                 <select id="form-fire2-lot" onchange="recalcAllSubgroupsPricing()"><option value="">Nessuna</option></select>
-                <span style="font-size: 0.75rem; color: var(--success);" id="live-fire2-cost"></span>
               </div>
             </div>
           </div>
@@ -433,6 +463,35 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL SCARTO -->
+  <div class="modal-overlay" id="scrap-modal">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2>Registra Scarto / Rottura</h2>
+        <button class="close-btn" id="close-scrap-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="scrap-form">
+          <div class="form-group" style="margin-bottom: 1rem;"><label>Seleziona Lotto *</label><select id="scrap-form-lot" required><option value="">Seleziona lotto...</option></select></div>
+          <div class="form-group" style="margin-bottom: 1rem;"><label>Quantità pezzi scartati *</label><input type="number" id="scrap-form-qty" min="1" value="1" required></div>
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label>Fase di scarto *</label>
+            <select id="scrap-form-phase">
+              <option value="Crudo (in lavorazione)">Crudo (in lavorazione)</option>
+              <option value="Biscotto (prima cottura)">Biscotto (prima cottura)</option>
+              <option value="Smalto (seconda cottura)">Smalto (seconda cottura)</option>
+              <option value="Manipolazione">Manipolazione</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" id="close-scrap-modal-btn">Annulla</button>
+        <button class="btn btn-sm" id="save-scrap-btn">Registra Scarto</button>
+      </div>
+    </div>
+  </div>
   
   <!-- MODAL AGGIUNTA / MODIFICA MATERIALE / ATTREZZATURA / FORNO -->
   <div class="modal-overlay" id="material-modal">
@@ -448,28 +507,13 @@
           <div class="form-group" style="margin-bottom: 1rem;"><label>Nome *</label><input type="text" id="mat-form-name" required placeholder="Nome materiale / attrezzatura"></div>
           <div class="form-group" style="margin-bottom: 1rem;" id="mat-form-unit-wrapper"><label id="mat-unit-label">Formato (kg / ml / conf.)</label><input type="number" id="mat-form-unit" value="1" min="0.1" step="0.1"></div>
           <div class="form-group" style="margin-bottom: 1rem; display: none;" id="mat-form-qty-wrapper"><label id="mat-qty-label">Quantità</label><input type="number" id="mat-form-qty" value="1" min="1" step="1"></div>
-          <div class="form-group" style="margin-bottom: 1rem;" id="mat-form-price-wrapper"><label>Prezzo (€) *</label><input type="number" id="mat-form-price" required min="0" step="0.01" placeholder="10.00"></div>
+          <div class="form-group" style="margin-bottom: 1rem;"><label>Prezzo (€) *</label><input type="number" id="mat-form-price" required min="0" step="0.01" placeholder="10.00"></div>
           <div class="form-group" id="mat-form-color-wrapper" style="margin-bottom: 1rem; display: none;"><label>Colore anteprima</label><input type="color" id="mat-form-color" value="#9e5338" style="height: 40px; padding: 2px;"></div>
         </form>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" id="close-material-modal-btn">Annulla</button>
         <button class="btn btn-sm" id="save-material-btn">Salva Voce</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- MODAL AZIONI MULTIPLE -->
-  <div class="modal-overlay" id="batch-modal">
-    <div class="modal" style="max-width: 450px;">
-      <div class="modal-header">
-        <h2 id="batch-modal-title">Modifica di Gruppo</h2>
-        <button class="close-btn" id="close-batch-modal">&times;</button>
-      </div>
-      <div class="modal-body" id="batch-modal-body"></div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary btn-sm" id="close-batch-modal-btn">Annulla</button>
-        <button class="btn btn-sm" id="save-batch-btn">Applica</button>
       </div>
     </div>
   </div>
@@ -481,8 +525,7 @@
       { "id": "oven_small", "name": "Forno piccolo", "lowTempCost": 35, "highTempCost": 65 }
     ],
     "attrezzature_costi": [
-      { "id": "eq_1", "nome": "Secchio 1 lt.", "prezzo": 4.02, "quantita": 2 },
-      { "id": "eq_2", "nome": "Densimetro per smalti", "prezzo": 16, "quantita": 1 }
+      { "id": "eq_1", "nome": "Secchio 1 lt.", "prezzo": 4.02, "quantita": 2 }
     ],
     "colori_smalti": [
       { "id": "col_1", "name": "Designer Liner Red (37 ml)", "prezzo": 7.4, "quantita": 1, "color": "#b33928" }
@@ -494,20 +537,21 @@
       { "id": "clay_1", "name": "Stoneware bianca Colorobbia - 25 kg", "kg": 25, "prezzo": 32.3 }
     ],
     "firings": [],
-    "ceramics": []
+    "ceramics": [],
+    "scraps": []
   };
   
   let appData = {};
   let selectedCeramicsIds = new Set();
   
   function loadData() {
-    const saved = localStorage.getItem("ceramic_app_data_pro_v11");
+    const saved = localStorage.getItem("ceramic_app_data_pro_v12");
     appData = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEMO_DATA));
     ensureDataStructure();
   }
   
   function saveData() {
-    localStorage.setItem("ceramic_app_data_pro_v11", JSON.stringify(appData));
+    localStorage.setItem("ceramic_app_data_pro_v12", JSON.stringify(appData));
   }
   
   function ensureDataStructure() {
@@ -518,6 +562,7 @@
     if (!appData.argille) appData.argille = DEMO_DATA.argille;
     if (!appData.firings) appData.firings = [];
     if (!appData.ceramics) appData.ceramics = [];
+    if (!appData.scraps) appData.scraps = [];
   }
   
   function getTotalPiecesCount(ceramic) {
@@ -543,17 +588,13 @@
     const kgWeight = unitWeightGrams / 1000.0;
     if (clayId) {
       const clay = appData.argille.find(c => c.id === clayId);
-      if (clay && clay.kg > 0) {
-        cost += (clay.prezzo / clay.kg) * kgWeight;
-      }
+      if (clay && clay.kg > 0) cost += (clay.prezzo / clay.kg) * kgWeight;
     }
     const allPaints = [...appData.colori_smalti, ...appData.cristalline];
     if (glazeIds && glazeIds.length > 0) {
       glazeIds.forEach(gId => {
         const paint = allPaints.find(p => p.id === gId);
-        if (paint) {
-          cost += (paint.prezzo / 20) * (kgWeight > 0 ? kgWeight : 0.1);
-        }
+        if (paint) cost += (paint.prezzo / 20) * (kgWeight > 0 ? kgWeight : 0.1);
       });
     }
     return cost;
@@ -569,8 +610,7 @@
   
   function calculateSubgroupFullUnitCost(sg, ceramic) {
     const unitMat = calculateUnitMaterialCost(sg.unitWeight || 0, ceramic.clayId, ceramic.glazeIds);
-    let totalLotWeight = 0;
-    let totalLotPieces = 0;
+    let totalLotWeight = 0, totalLotPieces = 0;
     if (ceramic.subgroups) {
       ceramic.subgroups.forEach(sub => {
         totalLotWeight += (sub.unitWeight || 0) * (sub.quantity || 0);
@@ -680,6 +720,20 @@
     document.getElementById("dash-total-sales").innerText = formatCurrency(totalSalesVal);
     document.getElementById("dash-avg-margin").innerText = marginCount > 0 ? (marginSum / marginCount).toFixed(1) + "%" : "0%";
     document.getElementById("dash-avg-unit-cost").innerText = unitCostCount > 0 ? formatCurrency(totalUnitCosts / unitCostCount) : "€0,00";
+
+    // Scarti stats
+    let totalScrapsCount = 0;
+    let totalScrapsCost = 0;
+    appData.scraps.forEach(sc => {
+      totalScrapsCount += sc.quantity;
+      const lot = appData.ceramics.find(c => c.id === sc.ceramicId);
+      if (lot && lot.subgroups && lot.subgroups.length > 0) {
+        const avgUnitCost = calculateCeramicCosts(lot).total / Math.max(1, getTotalPiecesCount(lot));
+        totalScrapsCost += avgUnitCost * sc.quantity;
+      }
+    });
+    document.getElementById("dash-total-scraps").innerText = totalScrapsCount;
+    document.getElementById("dash-total-scraps-cost").innerText = formatCurrency(totalScrapsCost);
   }
   
   function getFilteredCeramics() {
@@ -767,6 +821,86 @@
       `;
     });
   }
+
+  function renderScrapsTable() {
+    const tbody = document.getElementById("scraps-tbody");
+    tbody.innerHTML = "";
+    if (!appData.scraps || appData.scraps.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Nessuno scarto registrato.</td></tr>`;
+      return;
+    }
+    appData.scraps.forEach(sc => {
+      const lot = appData.ceramics.find(c => c.id === sc.ceramicId);
+      const lotName = lot ? lot.name : "Lotto eliminato";
+      let unitCost = 0;
+      if (lot && getTotalPiecesCount(lot) > 0) {
+        unitCost = calculateCeramicCosts(lot).total / getTotalPiecesCount(lot);
+      }
+      const totalLost = unitCost * sc.quantity;
+      tbody.innerHTML += `
+        <tr>
+          <td style="font-weight: 600;">${escapeHtml(lotName)}</td>
+          <td>${escapeHtml(sc.phase)}</td>
+          <td>${sc.quantity} pz</td>
+          <td>${formatCurrency(totalLost)}</td>
+          <td class="actions-cell"><button class="btn btn-danger btn-sm" onclick="deleteScrap('${sc.id}')">&times;</button></td>
+        </tr>
+      `;
+    });
+  }
+
+  window.deleteScrap = (id) => {
+    if (confirm("Eliminare questa registrazione di scarto?")) {
+      appData.scraps = appData.scraps.filter(s => s.id !== id);
+      saveData();
+      refreshAll();
+    }
+  };
+
+  document.getElementById("btn-new-scrap").addEventListener("click", openScrapModal);
+  document.getElementById("btn-new-scrap-tab").addEventListener("click", openScrapModal);
+
+  function openScrapModal() {
+    const modal = document.getElementById("scrap-modal");
+    const lotSel = document.getElementById("scrap-form-lot");
+    lotSel.innerHTML = '<option value="">Seleziona lotto...</option>';
+    appData.ceramics.forEach(c => {
+      lotSel.innerHTML += `<option value="${c.id}">${escapeHtml(c.name)} (${getRemainingPiecesCount(c)} pz residui)</option>`;
+    });
+    modal.classList.add("open");
+  }
+
+  document.getElementById("save-scrap-btn").addEventListener("click", () => {
+    const ceramicId = document.getElementById("scrap-form-lot").value;
+    const quantity = parseInt(document.getElementById("scrap-form-qty").value) || 1;
+    const phase = document.getElementById("scrap-form-phase").value;
+    if (!ceramicId) return alert("Seleziona un lotto.");
+    
+    appData.scraps.push({ id: "scrap_" + Date.now(), ceramicId, quantity, phase });
+    
+    // Riduci automaticamente i pezzi dal lotto o imposta a scartata se esauriti
+    const lot = appData.ceramics.find(c => c.id === ceramicId);
+    if (lot && lot.subgroups && lot.subgroups.length > 0) {
+      // Scala dai sottogruppi
+      let rem = quantity;
+      lot.subgroups.forEach(sg => {
+        if (rem > 0) {
+          const availableInSg = (sg.quantity || 0) - (sg.soldQuantity || 0);
+          const toReduce = Math.min(rem, availableInSg);
+          sg.quantity = Math.max(0, (sg.quantity || 0) - toReduce);
+          rem -= toReduce;
+        }
+      });
+      if (getRemainingPiecesCount(lot) === 0) lot.status = "Scartata";
+    }
+
+    saveData();
+    document.getElementById("scrap-modal").classList.remove("open");
+    refreshAll();
+  });
+
+  document.getElementById("close-scrap-modal").addEventListener("click", () => document.getElementById("scrap-modal").classList.remove("open"));
+  document.getElementById("close-scrap-modal-btn").addEventListener("click", () => document.getElementById("scrap-modal").classList.remove("open"));
   
   window.deleteFiring = (firingId) => {
     if (confirm("Eliminare questa cottura?")) {
@@ -830,7 +964,6 @@
   document.getElementById("close-firing-modal-btn").addEventListener("click", () => document.getElementById("firing-modal").classList.remove("open"));
   
   function renderSettingsTables() {
-    // Forni
     const ovenTbody = document.querySelector("#settings-oven-table tbody");
     ovenTbody.innerHTML = "";
     appData.ovens.forEach(o => {
@@ -844,28 +977,24 @@
       `;
     });
     
-    // Argille
     const clayTbody = document.querySelector("#settings-clay-table tbody");
     clayTbody.innerHTML = "";
     appData.argille.forEach(cl => {
       clayTbody.innerHTML += `<tr><td style="font-weight: 600;">${escapeHtml(cl.name)}</td><td>${cl.kg} kg</td><td>${formatCurrency(cl.prezzo)}</td><td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('clay', '${cl.id}')">Modifica</button><button class="btn btn-danger btn-sm" onclick="deleteClay('${cl.id}')">&times;</button></td></tr>`;
     });
     
-    // Smalti
     const glazeTbody = document.querySelector("#settings-glaze-table tbody");
     glazeTbody.innerHTML = "";
     appData.colori_smalti.forEach(g => {
       glazeTbody.innerHTML += `<tr><td><span class="color-dot" style="background-color: ${g.color || '#ccc'};"></span></td><td style="font-weight: 600;">${escapeHtml(g.name)}</td><td>${formatCurrency(g.prezzo)}</td><td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('glaze', '${g.id}')">Modifica</button><button class="btn btn-danger btn-sm" onclick="deleteGlaze('${g.id}')">&times;</button></td></tr>`;
     });
     
-    // Cristalline
     const crystalTbody = document.querySelector("#settings-crystal-table tbody");
     crystalTbody.innerHTML = "";
     appData.cristalline.forEach(c => {
       crystalTbody.innerHTML += `<tr><td><span class="color-dot" style="background-color: ${c.color || '#ccc'};"></span></td><td style="font-weight: 600;">${escapeHtml(c.name)}</td><td>${formatCurrency(c.prezzo)}</td><td class="actions-cell"><button class="btn btn-secondary btn-sm" onclick="openMaterialModal('crystal', '${c.id}')">Modifica</button><button class="btn btn-danger btn-sm" onclick="deleteCrystal('${c.id}')">&times;</button></td></tr>`;
     });
     
-    // Attrezzature
     const eqTbody = document.querySelector("#settings-equipment-table tbody");
     eqTbody.innerHTML = "";
     appData.attrezzature_costi.forEach(eq => {
@@ -962,6 +1091,7 @@
     if (!name) return alert("Inserisci il nome.");
     
     if (editId) {
+      if (type === "oven") { let it = appData.ovens.find(o => o.id === editId); if(it){ it.name = name; it.lowTempCost = prezzo; it.highTempCost = prezzo * 1.5; } }
       if (type === "clay") { let it = appData.argille.find(c => c.id === editId); if(it){ it.name = name; it.kg = unit; it.prezzo = prezzo; } }
       if (type === "glaze") { let it = appData.colori_smalti.find(c => c.id === editId); if(it){ it.name = name; it.prezzo = prezzo; it.color = color; } }
       if (type === "crystal") { let it = appData.cristalline.find(c => c.id === editId); if(it){ it.name = name; it.prezzo = prezzo; it.color = color; } }
@@ -1195,6 +1325,7 @@
     updateDashboard();
     renderCeramics();
     renderFiringsTable();
+    renderScrapsTable();
     renderSettingsTables();
   }
   
