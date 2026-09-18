@@ -831,9 +831,18 @@
         </div>
 
         <div class="settings-row">
-            <label class="form-label">Quantità pezzi</label>
-            <input type="number" class="form-control" id="quote-quantity"
-                   value="1" min="1">
+            <label class="form-label">Smalti / Cristalline</label>
+            <select class="form-control" id="quote-glazes" multiple></select>
+        </div>
+
+        <div class="settings-row">
+            <label class="form-label">Cottura 1</label>
+            <select class="form-control" id="quote-fire1"></select>
+        </div>
+
+        <div class="settings-row">
+            <label class="form-label">Cottura 2</label>
+            <select class="form-control" id="quote-fire2"></select>
         </div>
 
         <div class="settings-row">
@@ -848,7 +857,17 @@
         <div class="form-section-title">Risultato</div>
 
         <div class="stat-card">
-            <div class="stat-label">Costo stimato per pezzo</div>
+            <div class="stat-label">Costo materiali</div>
+            <div class="stat-value" id="quote-material-cost">€0,00</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Costo cottura</div>
+            <div class="stat-value" id="quote-fire-cost">€0,00</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Costo totale per pezzo</div>
             <div class="stat-value" id="quote-unit-cost">€0,00</div>
         </div>
 
@@ -2134,8 +2153,39 @@
         renderScraps();
         renderFirings();
         renderSettings();
+        renderQuoteOptions();
     }
+// ── PREVENTIVATORE: popola i menu ────────────────────
+function renderQuoteOptions() {
+    const clay = document.getElementById("quote-clay");
+    const glazes = document.getElementById("quote-glazes");
+    const fire1 = document.getElementById("quote-fire1");
+    const fire2 = document.getElementById("quote-fire2");
 
+    if(!clay || !glazes || !fire1 || !fire2) return;
+
+    clay.innerHTML =
+        '<option value="">Seleziona argilla</option>' +
+        D.argille.map(x =>
+            `<option value="${esc(x.id)}">${esc(x.name)}</option>`
+        ).join("");
+
+    const allGlazes = [...D.colori_smalti, ...D.cristalline];
+
+    glazes.innerHTML =
+        allGlazes.map(x =>
+            `<option value="${esc(x.id)}">${esc(x.name)}</option>`
+        ).join("");
+
+    const fireOptions =
+        '<option value="">Nessuna</option>' +
+        D.firings.map(x =>
+            `<option value="${esc(x.id)}">${esc(x.name || x.date || "Cottura")}</option>`
+        ).join("");
+
+    fire1.innerHTML = fireOptions;
+    fire2.innerHTML = fireOptions;
+}
         load();
     renderAll();
     initPinLock();
