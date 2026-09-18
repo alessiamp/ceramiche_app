@@ -774,6 +774,27 @@
 
             <div class="settings-section">
                 <div class="settings-section-title">
+                    Sincronizzazione Cloud (GitHub Gist)
+                </div>
+                <div style="padding: 0.85rem 1rem; font-size: 0.82rem; color: var(--ink-muted);">
+                    Inserisci qui sotto il tuo <strong>Token GitHub</strong> (Classic Token con permesso <code>gist</code>) e l'ID del Gist per sincronizzare automaticamente i dati tra PC e telefono.
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; gap: 0.4rem;">
+                    <label class="form-label">GitHub Token (Personal Access Token)</label>
+                    <input type="password" class="form-control" id="sync-token" placeholder="ghp_xxxxxxxxxxxx">
+                </div>
+                <div class="settings-row" style="flex-direction: column; align-items: stretch; gap: 0.4rem;">
+                    <label class="form-label">GitHub Gist ID (lascia vuoto per crearlo automatico)</label>
+                    <input type="text" class="form-control" id="sync-gist-id" placeholder="ID del Gist (es. a1b2c3d...)">
+                </div>
+                <div class="backup-btns">
+                    <button class="btn" id="btn-sync-save">Salva & Sincronizza</button>
+                    <button class="btn btn-ghost" id="btn-sync-pull">Scarica da Cloud</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">
                     Forni
                     <button class="btn btn-sm btn-subtle" id="btn-add-oven">+ Aggiungi</button>
                 </div>
@@ -797,7 +818,7 @@
             </div>
 
             <div class="settings-section">
-                <div class="settings-section-title">Backup Dati</div>
+                <div class="settings-section-title">Backup Dati Locale</div>
                 <div class="backup-btns">
                     <button class="btn btn-ghost" id="btn-export">⬇ Esporta</button>
                     <button class="btn btn-ghost" id="btn-import">⬆ Importa</button>
@@ -1070,15 +1091,117 @@
     };
 
     let D = {};
+    let syncConfig = { token: "", gistId: "" };
+
+    function loadSyncConfig() {
+        const conf = localStorage.getItem("ceraapp_sync");
+        if(conf) {
+            try {
+                syncConfig = JSON.parse(conf);
+                document.getElementById("sync-token").value = syncConfig.token || "";
+                document.getElementById("sync-gist-id").value = syncConfig.gistId || "";
+            } catch(e) {}
+        }
+    }
+
+    async function pushToCloud() {
+        if(!syncConfig.token) return;
+        try {
+            const bodyData = {
+                description: "Backup Ceramiche App Cloud",
+                public: false,
+                files: {
+                    "ceramiche_data.json": {
+                        content: JSON.stringify(D, null, 2)
+                    }
+                }
+            };
+            let url = "https://api.github.com/gists";
+            let method = "POST";
+            if(syncConfig.gistId) {
+                url = `https://api.github.com/gists/${syncConfig.gistId}`;
+                method = "PATCH";
+            }
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    "Authorization": `token ${syncConfig.token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(bodyData)
+            });
+            if(res.ok) {
+                const json = await res.json();
+                if(!syncConfig.gistId && json.id) {
+                    syncConfig.gistId = json.id;
+                    document.getElementById("sync-gist-id").value = json.id;
+                    localStorage.setItem("ceraapp_sync", JSON.stringify(syncConfig));
+                }
+                toast("☁️ Sincronizzato con il Cloud!");
+            }
+        } catch(err) {
+            console.error("Errore sync cloud:", err);
+        }
+    }
+
+    async function pullFromCloud() {
+        if(!syncConfig.token || !syncConfig.gistId) {
+            toast("Inserisci Token e Gist ID");
+            return;
+        }
+        try {
+            const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+                headers: { "Authorization": `token ${syncConfig.token}` }
+            });
+            if(res.ok) {
+                const json = await res.json();
+                const file = json.files["ceramiche_data.json"];
+                if(file && file.content) {
+                    const raw = JSON.parse(file.content);
+                    processImportData(raw);
+                    toast("☁️ Dati scaricati dal Cloud!");
+                }
+            } else {
+                toast("⚠ Errore download Cloud");
+            }
+        } catch(err) {
+            toast("⚠ Errore di connessione");
+        }
+    }
 
     function load() {
+        loadSyncConfig();
         const s = localStorage.getItem("ceraapp_v2");
         D = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULTS));
         ["ovens","argille","colori_smalti","cristalline","firings","sales","scraps","ceramics"]
             .forEach(k => { if(!D[k]) D[k] = DEFAULTS[k] || []; });
+        
+        // Se configurato, prova a scaricare gli aggiornamenti dal cloud all'avvio in background
+        if(syncConfig.token && syncConfig.gistId) {
+            pullFromCloudSilent();
+        }
     }
 
-    function save() { localStorage.setItem("ceraapp_v2", JSON.stringify(D)); }
+    async function pullFromCloudSilent() {
+        try {
+            const res = await fetch(`https://api.github.com/gists/${syncConfig.gistId}`, {
+                headers: { "Authorization": `token ${syncConfig.token}` }
+            });
+            if(res.ok) {
+                const json = await res.json();
+                const file = json.files["ceramiche_data.json"];
+                if(file && file.content) {
+                    const raw = JSON.parse(file.content);
+                    processImportData(raw, false);
+                }
+            }
+        } catch(e) {}
+    }
+
+    function save() { 
+        localStorage.setItem("ceraapp_v2", JSON.stringify(D)); 
+        pushToCloud();
+    }
 
     function uid(p) { return p + "_" + Date.now() + "_" + Math.random().toString(36).slice(2,6); }
 
@@ -1117,7 +1240,6 @@
         });
         return matCost;
     }
-    // Quota cottura per singolo pezzo (diviso per totale pezzi del lotto, non per ogni sg)
     function fireCostPerPiece(c) {
         const tot = Math.max(1, totalPieces(c));
         let fire = 0;
@@ -1184,7 +1306,7 @@
         });
     });
 
-    // Swipe per chiudere le modale
+    // Swipe per chiudere le modali
     document.querySelectorAll(".modal-overlay").forEach(overlay => {
         const sheet = overlay.querySelector(".modal-sheet");
         let startY = 0, isDragging = false;
@@ -1205,7 +1327,6 @@
         overlay.addEventListener("click", e => { if(e.target === overlay) closeModal(overlay.id); });
     });
 
-    // Chiudi con bottoni
     ["lot","sale","scrap","firing","material"].forEach(k => {
         document.getElementById(`close-${k}-modal`).onclick = () => closeModal(`${k}-modal`);
         document.getElementById(`close-${k}-modal-btn`).onclick = () => closeModal(`${k}-modal`);
@@ -1244,7 +1365,6 @@
         const clayFilter = document.getElementById("clay-filter");
         filterClay = clayFilter.value;
 
-        // Popola filtro argille
         const prevClay = filterClay;
         clayFilter.innerHTML = '<option value="">Tutte le argille</option>';
         D.argille.forEach(a => {
@@ -1291,7 +1411,6 @@
                 </div>`;
             }).join("");
 
-            // Barra progresso (max 5 segmenti)
             const segs = Math.min(tot,5);
             const soldSegs = segs>0 ? Math.round((soldCount/tot)*segs) : 0;
             const activeSegs = segs - soldSegs;
@@ -1339,7 +1458,6 @@
         document.getElementById("exp-"+id).classList.toggle("open");
     };
 
-    // Chips filtro stato
     document.getElementById("status-chips").addEventListener("click", e => {
         if(!e.target.classList.contains("filter-chip")) return;
         document.querySelectorAll(".filter-chip").forEach(c=>c.classList.remove("active"));
@@ -1362,7 +1480,6 @@
         document.getElementById("lot-photo-img").style.display="none";
         document.getElementById("photo-label").textContent="Aggiungi";
 
-        // Popola selects
         const claySel = document.getElementById("lot-clay");
         claySel.innerHTML = '<option value="">Nessuna</option>';
         D.argille.forEach(a => { const o=document.createElement("option"); o.value=a.id; o.textContent=a.name; claySel.appendChild(o); });
@@ -1373,7 +1490,6 @@
             [f1,f2].forEach(sel => { const o=document.createElement("option"); o.value=f.id; o.textContent=f.name+" ("+f.date+")"; sel.appendChild(o); });
         });
 
-        // Smalti
         const gg=document.getElementById("glaze-grid");
         gg.innerHTML = "";
         [...D.colori_smalti,...D.cristalline].forEach(g => {
@@ -1428,7 +1544,6 @@
         container.appendChild(row);
     });
 
-    // Foto
     document.getElementById("lot-photo-file").addEventListener("change", function() {
         if(!this.files[0]) return;
         const r=new FileReader();
@@ -1481,7 +1596,6 @@
         save(); closeModal("lot-modal"); renderAll(); toast("Lotto salvato ✓");
     });
 
-    document.getElementById("btn-new-ceramic") && document.getElementById("btn-new-ceramic").addEventListener("click", ()=>openLotModal());
     document.getElementById("btn-header-add").addEventListener("click", ()=>{ switchView("view-lots"); openLotModal(); });
     window.openLotModal = openLotModal;
 
@@ -1615,8 +1729,6 @@
     });
 
     document.getElementById("btn-quick-firing").addEventListener("click", ()=>{
-        const da = D.ceramics.filter(c=>c.status==="Da cuocere");
-        const names = da.map(c=>c.name).join(", ");
         document.getElementById("firing-name").value="Cottura " + today();
         document.getElementById("firing-date").value=today();
         document.getElementById("firing-cost").value="";
@@ -1632,6 +1744,20 @@
     };
 
     // ── IMPOSTAZIONI ─────────────────────────────────
+    document.getElementById("btn-sync-save").addEventListener("click", () => {
+        syncConfig.token = document.getElementById("sync-token").value.trim();
+        syncConfig.gistId = document.getElementById("sync-gist-id").value.trim();
+        localStorage.setItem("ceraapp_sync", JSON.stringify(syncConfig));
+        pushToCloud();
+    });
+
+    document.getElementById("btn-sync-pull").addEventListener("click", () => {
+        syncConfig.token = document.getElementById("sync-token").value.trim();
+        syncConfig.gistId = document.getElementById("sync-gist-id").value.trim();
+        localStorage.setItem("ceraapp_sync", JSON.stringify(syncConfig));
+        pullFromCloud();
+    });
+
     function renderSettings() {
         const ovRows=document.getElementById("ovens-rows");
         ovRows.innerHTML=D.ovens.length?D.ovens.map(o=>`<div class="settings-row"><span class="settings-row-name">${esc(o.name)}</span><span class="settings-row-value">${fmt(o.lowTempCost)}</span></div>`).join(""):"<div class='settings-row' style='color:var(--ink-muted)'>Nessun forno</div>";
@@ -1679,6 +1805,39 @@
         save(); closeModal("material-modal"); renderAll(); toast("Salvato ✓");
     });
 
+    function processImportData(raw, notify=true) {
+        const imported = {
+            ovens: raw.ovens || [],
+            argille: raw.argille || [],
+            colori_smalti: raw.colori_smalti || [],
+            cristalline: raw.cristalline || [],
+            attrezzature_costi: raw.attrezzature_costi || [],
+            firings: raw.firings || [],
+            sales: raw.sales || [],
+            scraps: raw.scraps || [],
+            ceramics: (raw.ceramics || []).map(c => ({
+                ...c,
+                fire1Id: c.fire1Id || c.fire1Lot || "",
+                fire2Id: c.fire2Id || c.fire2Lot || "",
+                glazeIds: c.glazeIds || [],
+                multiplier: c.multiplier || 3.5,
+                subgroups: (c.subgroups || []).map(sg => ({
+                    type: sg.type || "Pezzo",
+                    quantity: sg.quantity || 0,
+                    soldQuantity: sg.soldQuantity || 0,
+                    scrappedQuantity: sg.scrappedQuantity || 0,
+                    unitWeight: sg.unitWeight || 0,
+                    unitPrice: sg.unitPrice || 0
+                }))
+            }))
+        };
+        if(!Array.isArray(imported.ceramics)) throw new Error("Struttura non valida");
+        D = imported;
+        save(); 
+        renderAll(); 
+        if(notify) toast("Importazione completata ✓");
+    }
+
     // Backup
     document.getElementById("btn-export").addEventListener("click", ()=>{
         const blob=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
@@ -1691,50 +1850,16 @@
         if(!this.files[0]) return;
         const r=new FileReader();
         r.onload=e=>{
-            try{
-                const raw=JSON.parse(e.target.result);
-                // Accetta entrambi i formati (vecchio ceramic_app_mobile_v1 e nuovo)
-                // Normalizza le chiavi mancanti
-                const imported = {
-                    ovens: raw.ovens || [],
-                    argille: raw.argille || [],
-                    colori_smalti: raw.colori_smalti || [],
-                    cristalline: raw.cristalline || [],
-                    attrezzature_costi: raw.attrezzature_costi || [],
-                    firings: raw.firings || [],
-                    sales: raw.sales || [],
-                    scraps: raw.scraps || [],
-                    ceramics: (raw.ceramics || []).map(c => ({
-                        ...c,
-                        // Compatibilità vecchio formato: fire1Id/fire2Id
-                        fire1Id: c.fire1Id || c.fire1Lot || "",
-                        fire2Id: c.fire2Id || c.fire2Lot || "",
-                        glazeIds: c.glazeIds || [],
-                        multiplier: c.multiplier || 3.5,
-                        subgroups: (c.subgroups || []).map(sg => ({
-                            type: sg.type || "Pezzo",
-                            quantity: sg.quantity || 0,
-                            soldQuantity: sg.soldQuantity || 0,
-                            scrappedQuantity: sg.scrappedQuantity || 0,
-                            unitWeight: sg.unitWeight || 0,
-                            unitPrice: sg.unitPrice || 0
-                        }))
-                    }))
-                };
-                // Verifica minima struttura
-                if(!Array.isArray(imported.ceramics)) throw new Error("Struttura non valida");
-                D = imported;
-                save(); renderAll(); toast("Importazione completata ✓");
-            }
+            try{ processImportData(JSON.parse(e.target.result)); }
             catch(err){ toast("⚠ File non valido: " + err.message); }
         };
         r.readAsText(this.files[0]);
-        this.value=""; // reset per permettere reimportazione stesso file
+        this.value="";
     });
 
-    // ── UTILITY ──────────────────────────────────────
     function switchView(id) {
         document.querySelectorAll(".view-section").forEach(s=>s.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(b=>b.classList.0 && b.classList.remove("active"));
         document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
         document.getElementById(id).classList.add("active");
         document.querySelector(`.tab-btn[data-view="${id}"]`).classList.add("active");
@@ -1749,7 +1874,6 @@
         renderSettings();
     }
 
-    // ── AVVIO ────────────────────────────────────────
     load();
     renderAll();
     </script>
