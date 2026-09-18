@@ -682,6 +682,56 @@
             white-space: nowrap;
         }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+   
+    /* ── PREVENTIVATORE ───────────────────────────── */
+
+.quote-check-list {
+    display: grid;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.quote-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--paper);
+    cursor: pointer;
+}
+
+.quote-check-item input {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+}
+
+.quote-check-item span {
+    font-size: 0.9rem;
+}
+
+.quote-results {
+    display: grid;
+    gap: 10px;
+}
+
+.quote-result-main {
+    padding: 18px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+
+.quote-result-main .stat-label {
+    margin-bottom: 5px;
+}
+
+.quote-result-main .stat-value {
+    font-size: 1.5rem;
+}
+    
     </style>
 </head>
 <body>
@@ -831,9 +881,9 @@
         </div>
 
         <div class="settings-row">
-            <label class="form-label">Smalti / Cristalline</label>
-            <select class="form-control" id="quote-glazes" multiple></select>
-        </div>
+    <label class="form-label">Smalti / Cristalline</label>
+    <div id="quote-glazes" class="quote-check-list"></div>
+</div>
 
         <div class="settings-row">
             <label class="form-label">Cottura 1</label>
@@ -2172,10 +2222,14 @@ function renderQuoteOptions() {
 
     const allGlazes = [...D.colori_smalti, ...D.cristalline];
 
-    glazes.innerHTML =
-        allGlazes.map(x =>
-            `<option value="${esc(x.id)}">${esc(x.name)}</option>`
-        ).join("");
+    glazes.innerHTML = allGlazes.length
+        ? allGlazes.map(x => `
+            <label class="quote-check-item">
+                <input type="checkbox" value="${esc(x.id)}">
+                <span>${esc(x.name)}</span>
+            </label>
+        `).join("")
+        : '<div style="color:var(--ink-muted); font-size:.85rem;">Nessuno smalto disponibile</div>';
 
     const fireOptions =
         '<option value="">Nessuna</option>' +
