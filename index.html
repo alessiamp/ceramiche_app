@@ -685,7 +685,49 @@
     </style>
 </head>
 <body>
-</div>
+
+    <!-- BLOCCO PIN -->
+    <div id="pin-lock" style="position:fixed; inset:0; z-index:99999; background:var(--paper,#f7f3ee); display:flex; align-items:center; justify-content:center; padding:24px;">
+        <div style="width:min(360px,100%); text-align:center;">
+            <div style="font-size:3rem; margin-bottom:8px;">🏺</div>
+
+            <h1 id="pin-title" style="margin:0 0 8px;">
+                Le mie ceramiche
+            </h1>
+
+            <p id="pin-subtitle" style="color:var(--ink-muted); margin-bottom:18px;">
+                Inserisci il PIN per continuare
+            </p>
+
+            <input
+                id="pin-input"
+                type="password"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="6"
+                autocomplete="off"
+                class="form-control"
+                placeholder="PIN"
+                style="text-align:center; font-size:1.4rem; letter-spacing:.35em;"
+            >
+
+            <button
+                id="pin-btn"
+                class="btn"
+                style="width:100%; margin-top:12px;"
+            >
+                Accedi
+            </button>
+
+            <div
+                id="pin-error"
+                style="color:#b42318; min-height:1.3em; margin-top:10px;"
+            ></div>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <header class="app-header">
 
     <!-- HEADER -->
     <header class="app-header">
@@ -1087,6 +1129,74 @@
     </div>
 
     <script>
+            // ── BLOCCO PIN ────────────────────────────────────
+    const PIN_HASH_KEY = "ceraapp_pin_hash";
+
+    async function hashPin(pin) {
+        const data = new TextEncoder().encode(pin);
+        const hash = await crypto.subtle.digest("SHA-256", data);
+        return [...new Uint8Array(hash)]
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("");
+    }
+
+    async function initPinLock() {
+        const lock = document.getElementById("pin-lock");
+        const input = document.getElementById("pin-input");
+        const btn = document.getElementById("pin-btn");
+        const error = document.getElementById("pin-error");
+        const title = document.getElementById("pin-title");
+        const subtitle = document.getElementById("pin-subtitle");
+
+        if(!lock || !input || !btn) return;
+
+        const savedHash = localStorage.getItem(PIN_HASH_KEY);
+
+        // Primo utilizzo: chiediamo di creare il PIN
+        if(!savedHash) {
+            title.textContent = "Imposta il PIN";
+            subtitle.textContent = "Scegli un PIN di 4–6 cifre per proteggere l'app";
+            btn.textContent = "Imposta PIN";
+        }
+
+        async function unlock() {
+            const pin = input.value.trim();
+
+            if(!/^\d{4,6}$/.test(pin)) {
+                error.textContent = "Usa un PIN di 4–6 cifre.";
+                input.focus();
+                return;
+            }
+
+            const hash = await hashPin(pin);
+
+            // Primo utilizzo: salva il nuovo PIN
+            if(!savedHash) {
+                localStorage.setItem(PIN_HASH_KEY, hash);
+                lock.remove();
+                return;
+            }
+
+            // Accesso normale
+            if(hash === savedHash) {
+                lock.remove();
+            } else {
+                error.textContent = "PIN non corretto.";
+                input.value = "";
+                input.focus();
+            }
+        }
+
+        btn.addEventListener("click", unlock);
+
+        input.addEventListener("keydown", function(e) {
+            if(e.key === "Enter") {
+                unlock();
+            }
+        });
+
+        input.focus();
+    }
     // ── DATI ─────────────────────────────────────────
     const DEFAULTS = {
         ovens: [{id:"ov1", name:"Forno Grande", lowTempCost:60, highTempCost:100}],
@@ -1971,7 +2081,9 @@
         renderSettings();
     }
 
-    load(); renderAll();
+        load();
+    renderAll();
+    initPinLock();
 </script>
 </body>
 </html>
