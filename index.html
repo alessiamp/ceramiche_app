@@ -685,6 +685,7 @@
     </style>
 </head>
 <body>
+</div>
 
     <!-- HEADER -->
     <header class="app-header">
@@ -988,7 +989,12 @@
                 <div class="form-stack">
                     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="scrap-date"></div>
                     <div class="form-group"><label class="form-label">Lotto</label><select class="form-control" id="scrap-ceramic"><option value="">Seleziona lotto…</option></select></div>
+                    <div class="form-group"><label class="form-label">Oggetto</label><select class="form-control" id="scrap-subgroup" disabled><option value="">Seleziona prima il lotto…</option></select></div>
                     <div class="form-group"><label class="form-label">Quantità</label><input type="number" class="form-control" id="scrap-qty" value="1" min="1"></div>
+                    <div class="form-group">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" id="scrap-notes" placeholder="Facoltativo"></textarea>
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Fase</label>
                         <select class="form-control" id="scrap-phase">
@@ -1204,6 +1210,17 @@
 
     function uid(p) { return p + "_" + Date.now() + "_" + Math.random().toString(36).slice(2,6); }
 
+    function ensureSubgroupIds() {
+        (D.ceramics||[]).forEach(c => (c.subgroups||[]).forEach(sg => {
+            if(!sg.id) sg.id=uid("sg");
+            if(sg.soldQuantity==null) sg.soldQuantity=0;
+            if(sg.scrappedQuantity==null) sg.scrappedQuantity=0;
+        }));
+    }
+    function subgroupRemaining(sg) {
+        return Math.max(0,(sg.quantity||0)-(sg.soldQuantity||0)-(sg.scrappedQuantity||0));
+    }
+
     function esc(s) {
         return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     }
@@ -1256,7 +1273,7 @@
         return unitFullCost(sg,c) * (c.multiplier||3.5);
     }
     function lotPrice(c) {
-        return (c.subgroups||[]).reduce(function(a,sg){return a+sgPrice(sg,c)*(sg.quantity||0);},0);
+        return (c.subgroups||[]).reduce(function(a,sg){return a+sgPrice(sg,c)*subgroupRemaining(sg);},0);
     }
     function lotCost(c) {
         return (c.subgroups||[]).reduce(function(a,sg){return a+unitFullCost(sg,c)*(sg.quantity||0);},0);
@@ -1512,35 +1529,57 @@
                 document.getElementById("lot-fire2").value=c.fire2Id||"";
                 if(c.photo){ document.getElementById("lot-photo-url").value=c.photo; document.getElementById("lot-photo-img").src=c.photo; document.getElementById("lot-photo-img").style.display="block"; document.getElementById("photo-label").textContent=""; }
                 gg.querySelectorAll('input[name="glaze-cb"]').forEach(cb => { cb.checked=(c.glazeIds||[]).includes(cb.value); });
-                renderSgRows(c.subgroups||[]);
+                renderSgRows(c.subgroups||[], c);
                 document.getElementById("lot-modal-title").textContent="Modifica Lotto";
             }
         } else {
-            renderSgRows([{type:"Pezzo",quantity:4,unitWeight:200,unitPrice:0}]);
+            renderSgRows([{id:uid("sg"),type:"Pezzo",quantity:4,unitWeight:200,unitPrice:0,manualPrice:false}]);
             document.getElementById("lot-modal-title").textContent="Nuovo Lotto";
         }
         openModal("lot-modal");
     }
 
-    function renderSgRows(rows) {
+    function renderSgRows(rows, c=null) {
         const container=document.getElementById("sg-rows");
-        container.innerHTML=rows.map(sg=>`
-            <div class="sg-row">
+        container.innerHTML=rows.map(sg=>{
+            const id=sg.id||uid("sg");
+            const autoPrice=c ? unitFullCost(sg,c)*(c.multiplier||3.5) : (sg.unitPrice||0);
+            const displayedPrice=sg.manualPrice===true ? (sg.unitPrice||0) : autoPrice;
+            return `<div class="sg-row" data-sg-id="${esc(id)}">
                 <input type="text" class="sg-type" value="${esc(sg.type)}" placeholder="Tipo">
                 <input type="number" class="sg-qty" value="${sg.quantity||1}" min="1">
                 <input type="number" class="sg-weight" value="${sg.unitWeight||0}" min="0">
-                <input type="number" class="sg-price" value="${sg.unitPrice||0}" min="0" step="0.5">
+                <input type="number" class="sg-price" value="${displayedPrice||0}" min="0" step="0.5" data-manual="${sg.manualPrice===true?'1':'0'}">
                 <button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>
-            </div>
-        `).join("");
+            </div>`;
+        }).join("");
+        container.querySelectorAll(".sg-price").forEach(input=>input.addEventListener("input",()=>input.dataset.manual="1"));
     }
 
     document.getElementById("btn-add-sg").addEventListener("click", () => {
         const container=document.getElementById("sg-rows");
         const row=document.createElement("div");
         row.className="sg-row";
-        row.innerHTML=`<input type="text" class="sg-type" value="Pezzo" placeholder="Tipo"><input type="number" class="sg-qty" value="1" min="1"><input type="number" class="sg-weight" value="150" min="0"><input type="number" class="sg-price" value="0" min="0" step="0.5"><button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>`;
+        row.dataset.sgId=uid("sg");
+        row.innerHTML=`<input type="text" class="sg-type" value="Pezzo" placeholder="Tipo"><input type="number" class="sg-qty" value="1" min="1"><input type="number" class="sg-weight" value="150" min="0"><input type="number" class="sg-price" value="0" min="0" step="0.5" data-manual="0"><button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>`;
+        row.querySelector(".sg-price").addEventListener("input",()=>row.querySelector(".sg-price").dataset.manual="1");
         container.appendChild(row);
+    });
+
+    document.getElementById("lot-multiplier").addEventListener("input", function() {
+        const tempC={
+            clayId:document.getElementById("lot-clay").value,
+            glazeIds:[...document.querySelectorAll('input[name="glaze-cb"]:checked')].map(cb=>cb.value),
+            fire1Id:document.getElementById("lot-fire1").value,
+            fire2Id:document.getElementById("lot-fire2").value,
+            subgroups:[]
+        };
+        document.querySelectorAll("#sg-rows .sg-row").forEach(row=>{
+            const priceInput=row.querySelector(".sg-price");
+            if(priceInput.dataset.manual==="1") return;
+            const sg={unitWeight:parseFloat(row.querySelector(".sg-weight").value)||0};
+            priceInput.value=(unitFullCost(sg,tempC)*(parseFloat(this.value)||3.5)).toFixed(2);
+        });
     });
 
     document.getElementById("lot-photo-file").addEventListener("change", function() {
@@ -1559,14 +1598,22 @@
         const name=document.getElementById("lot-name").value.trim();
         if(!name){document.getElementById("lot-name").focus(); toast("Inserisci il nome del lotto"); return;}
 
+        const existingLot=document.getElementById("lot-id").value
+            ? D.ceramics.find(x=>x.id===document.getElementById("lot-id").value) : null;
+        const existingSgs=existingLot ? (existingLot.subgroups||[]) : [];
         const sgs=[];
         document.querySelectorAll("#sg-rows .sg-row").forEach(row=>{
+            const sgId=row.dataset.sgId||uid("sg");
+            const oldSg=existingSgs.find(x=>x.id===sgId);
             sgs.push({
-                type: row.querySelector(".sg-type").value||"Pezzo",
-                quantity: parseInt(row.querySelector(".sg-qty").value)||1,
-                unitWeight: parseFloat(row.querySelector(".sg-weight").value)||0,
-                unitPrice: parseFloat(row.querySelector(".sg-price").value)||0,
-                soldQuantity: 0, scrappedQuantity: 0
+                id:sgId,
+                type:row.querySelector(".sg-type").value||"Pezzo",
+                quantity:parseInt(row.querySelector(".sg-qty").value)||1,
+                unitWeight:parseFloat(row.querySelector(".sg-weight").value)||0,
+                unitPrice:parseFloat(row.querySelector(".sg-price").value)||0,
+                manualPrice:row.querySelector(".sg-price").dataset.manual==="1",
+                soldQuantity:oldSg ? (oldSg.soldQuantity||0) : 0,
+                scrappedQuantity:oldSg ? (oldSg.scrappedQuantity||0) : 0
             });
         });
 
@@ -1658,36 +1705,86 @@
         }
         list.innerHTML=D.scraps.slice().reverse().map(sc=>{
             const c=D.ceramics.find(x=>x.id===sc.ceramicId);
+            const sg=c&&(c.subgroups||[]).find(x=>x.id===sc.subgroupId);
+            const objectName=sc.objectName||(sg&&sg.type)||"Oggetto";
             return `<div class="entry-card">
                 <div class="entry-card-info">
-                    <div class="entry-main">${c?esc(c.name):"Lotto rimosso"}</div>
-                    <div class="entry-meta">${sc.date} · ${esc(sc.phase)}</div>
+                    <div class="entry-main">${c?esc(c.name):"Lotto rimosso"} · ${esc(objectName)}</div>
+                    <div class="entry-meta">${sc.date} · ${esc(sc.phase)}${sc.notes?' · '+esc(sc.notes):''}</div>
                 </div>
-                <div class="entry-value red">${sc.quantity} pz</div>
-                <button class="btn btn-danger btn-sm" onclick="deleteScrap('${sc.id}')" style="margin-left:0.25rem;">&times;</button>
+                <div class="entry-value red">${sc.quantity} pz<br><span style="font-size:.72rem;font-weight:500;">costo ${fmt(sc.totalCost||0)}</span></div>
+                <button class="btn btn-danger btn-sm" onclick="deleteScrap('${sc.id}')" style="margin-left:.25rem;">&times;</button>
             </div>`;
         }).join("");
     }
 
-    document.getElementById("btn-new-scrap").addEventListener("click", ()=>{
+    function populateScrapSubgroups() {
+        const ceramicId=document.getElementById("scrap-ceramic").value;
+        const sel=document.getElementById("scrap-subgroup");
+        const qty=document.getElementById("scrap-qty");
+        sel.innerHTML='<option value="">Seleziona oggetto…</option>';
+        sel.disabled=true; qty.max="";
+        if(!ceramicId) return;
+        const c=D.ceramics.find(x=>x.id===ceramicId);
+        if(!c) return;
+        const available=(c.subgroups||[]).filter(sg=>subgroupRemaining(sg)>0);
+        available.forEach(sg=>{
+            const o=document.createElement("option");
+            o.value=sg.id; o.textContent=sg.type+" · "+subgroupRemaining(sg)+" pz disponibili";
+            sel.appendChild(o);
+        });
+        sel.disabled=available.length===0;
+        if(!available.length) sel.innerHTML='<option value="">Nessun pezzo disponibile</option>';
+    }
+
+    document.getElementById("scrap-ceramic").addEventListener("change",()=>{
+        populateScrapSubgroups(); document.getElementById("scrap-qty").value=1;
+    });
+    document.getElementById("scrap-subgroup").addEventListener("change",()=>{
+        const c=D.ceramics.find(x=>x.id===document.getElementById("scrap-ceramic").value);
+        const sg=c&&(c.subgroups||[]).find(x=>x.id===document.getElementById("scrap-subgroup").value);
+        const qty=document.getElementById("scrap-qty");
+        if(sg){qty.max=subgroupRemaining(sg);qty.value=Math.min(parseInt(qty.value)||1,subgroupRemaining(sg));} else qty.max="";
+    });
+
+    document.getElementById("btn-new-scrap").addEventListener("click",()=>{
         document.getElementById("scrap-date").value=today();
         document.getElementById("scrap-qty").value=1;
+        document.getElementById("scrap-notes").value="";
+        document.getElementById("scrap-phase").value="In lavorazione / Crudo";
         const sel=document.getElementById("scrap-ceramic");
         sel.innerHTML='<option value="">Seleziona lotto…</option>';
-        D.ceramics.forEach(c=>{const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; sel.appendChild(o);});
+        D.ceramics.forEach(c=>{const o=document.createElement("option");o.value=c.id;o.textContent=c.name;sel.appendChild(o);});
+        const sgSel=document.getElementById("scrap-subgroup");
+        sgSel.innerHTML='<option value="">Seleziona prima il lotto…</option>';sgSel.disabled=true;
         openModal("scrap-modal");
     });
 
-    document.getElementById("save-scrap-btn").addEventListener("click", ()=>{
+    document.getElementById("save-scrap-btn").addEventListener("click",()=>{
         const ceramicId=document.getElementById("scrap-ceramic").value;
-        if(!ceramicId){toast("Seleziona un lotto"); return;}
-        D.scraps.push({id:uid("sc"), date:document.getElementById("scrap-date").value, ceramicId, quantity:parseInt(document.getElementById("scrap-qty").value)||1, phase:document.getElementById("scrap-phase").value});
-        save(); closeModal("scrap-modal"); renderAll(); toast("Scarto registrato ✓");
+        const subgroupId=document.getElementById("scrap-subgroup").value;
+        const c=D.ceramics.find(x=>x.id===ceramicId);
+        const sg=c&&(c.subgroups||[]).find(x=>x.id===subgroupId);
+        const quantity=parseInt(document.getElementById("scrap-qty").value)||1;
+        if(!ceramicId){toast("Seleziona un lotto");return;}
+        if(!sg){toast("Seleziona l'oggetto del lotto");return;}
+        const available=subgroupRemaining(sg);
+        if(quantity<1||quantity>available){toast("Quantità non disponibile");return;}
+        const unitCost=unitFullCost(sg,c);
+        sg.scrappedQuantity=(sg.scrappedQuantity||0)+quantity;
+        D.scraps.push({id:uid("sc"),date:document.getElementById("scrap-date").value,ceramicId,subgroupId,objectName:sg.type,quantity,phase:document.getElementById("scrap-phase").value,notes:document.getElementById("scrap-notes").value,unitCost,totalCost:unitCost*quantity});
+        save();closeModal("scrap-modal");renderAll();toast("Scarto registrato ✓");
     });
 
-    window.deleteScrap = async function(id) {
+    window.deleteScrap=async function(id){
+        const sc=D.scraps.find(x=>x.id===id);
         if(!(await confirm("Eliminare questo scarto?"))) return;
-        D.scraps=D.scraps.filter(x=>x.id!==id); save(); renderAll(); toast("Scarto eliminato");
+        if(sc){
+            const c=D.ceramics.find(x=>x.id===sc.ceramicId);
+            const sg=c&&(c.subgroups||[]).find(x=>x.id===sc.subgroupId);
+            if(sg) sg.scrappedQuantity=Math.max(0,(sg.scrappedQuantity||0)-(sc.quantity||0));
+        }
+        D.scraps=D.scraps.filter(x=>x.id!==id);save();renderAll();toast("Scarto eliminato");
     };
 
     // ── COTTURE ──────────────────────────────────────
@@ -1821,12 +1918,14 @@
                 glazeIds: c.glazeIds || [],
                 multiplier: c.multiplier || 3.5,
                 subgroups: (c.subgroups || []).map(sg => ({
+                    id: sg.id || uid("sg"),
                     type: sg.type || "Pezzo",
                     quantity: sg.quantity || 0,
                     soldQuantity: sg.soldQuantity || 0,
                     scrappedQuantity: sg.scrappedQuantity || 0,
                     unitWeight: sg.unitWeight || 0,
-                    unitPrice: sg.unitPrice || 0
+                    unitPrice: sg.unitPrice || 0,
+                    manualPrice: sg.manualPrice === true
                 }))
             }))
         };
@@ -1872,8 +1971,7 @@
         renderSettings();
     }
 
-    load();
-    renderAll();
-    </script>
+    load(); renderAll();
+</script>
 </body>
 </html>
