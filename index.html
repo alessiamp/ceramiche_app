@@ -327,14 +327,18 @@
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
-        .sg-pill-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .sg-pill-list { display: flex; flex-direction: column; gap: 0.35rem; }
         .sg-pill {
             background: var(--white);
             border: 1px solid var(--dust);
-            border-radius: 20px;
-            padding: 0.25rem 0.65rem;
-            font-size: 0.75rem;
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.7rem;
+            font-size: 0.78rem;
             color: var(--ink-mid);
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.1rem;
         }
         .lot-actions-row {
             display: flex; gap: 0.5rem; margin-top: 0.75rem;
@@ -1088,41 +1092,43 @@
         return (c.subgroups||[]).reduce((a,sg) =>
             a + Math.max(0,(sg.quantity||0)-(sg.soldQuantity||0)-(sg.scrappedQuantity||0)), 0);
     }
-    function unitMatCost(w, clayId, glazes=[]) {
-        let c = 0;
+    function unitMatCost(w, clayId, glazes) {
+        glazes = glazes || [];
+        let matCost = 0;
         const kg = w / 1000;
         if(clayId) {
             const cl = D.argille.find(x=>x.id===clayId);
-            if(cl && cl.kg>0) c += (cl.prezzo/cl.kg)*kg;
+            if(cl && cl.kg>0) matCost += (cl.prezzo/cl.kg)*kg;
         }
         const all = [...D.colori_smalti,...D.cristalline];
-        glazes.forEach(gId => {
+        glazes.forEach(function(gId) {
             const p = all.find(x=>x.id===gId);
-            if(p) c += (p.prezzo/20)*(kg>0?kg:0.1);
+            if(p) matCost += (p.prezzo/20)*(kg>0?kg:0.1);
         });
-        return c;
+        return matCost;
+    }
+    // Quota cottura per singolo pezzo (diviso per totale pezzi del lotto, non per ogni sg)
+    function fireCostPerPiece(c) {
+        const tot = Math.max(1, totalPieces(c));
+        let fire = 0;
+        [c.fire1Id,c.fire2Id].filter(Boolean).forEach(function(fId) {
+            const f = D.firings.find(x=>x.id===fId);
+            if(f) fire += f.totalCost;
+        });
+        return fire / tot;
     }
     function unitFullCost(sg, c) {
-        const mat = unitMatCost(sg.unitWeight||0, c.clayId, c.glazeIds);
-        let fire = 0;
-        [c.fire1Id,c.fire2Id].filter(Boolean).forEach(fId => {
-            const f = D.firings.find(x=>x.id===fId);
-            if(f) fire += (f.totalCost / Math.max(1,totalPieces(c)));
-        });
-        return mat + fire;
+        return unitMatCost(sg.unitWeight||0, c.clayId, c.glazeIds) + fireCostPerPiece(c);
     }
     function sgPrice(sg, c) {
         if(sg.unitPrice>0) return sg.unitPrice;
-        const mat = unitMatCost(sg.unitWeight||0,c.clayId,c.glazeIds);
-        const full = unitFullCost(sg,c);
-        const mult = c.multiplier||3.5;
-        return Math.max(mat*mult, full*mult);
+        return unitFullCost(sg,c) * (c.multiplier||3.5);
     }
     function lotPrice(c) {
-        return (c.subgroups||[]).reduce((a,sg)=>a+sgPrice(sg,c)*(sg.quantity||0),0);
+        return (c.subgroups||[]).reduce(function(a,sg){return a+sgPrice(sg,c)*(sg.quantity||0);},0);
     }
     function lotCost(c) {
-        return (c.subgroups||[]).reduce((a,sg)=>a+unitFullCost(sg,c)*(sg.quantity||0),0);
+        return (c.subgroups||[]).reduce(function(a,sg){return a+unitFullCost(sg,c)*(sg.quantity||0);},0);
     }
 
     // ── TOAST ────────────────────────────────────────
@@ -1263,9 +1269,17 @@
                 ? `<img src="${c.photo}" onerror="this.parentElement.innerHTML='🏺'">`
                 : `🏺`;
             const badgeClass = "badge-" + c.status.replace(/ /g,".");
-            const sgs = (c.subgroups||[]).map(sg =>
-                `<span class="sg-pill">${esc(sg.type)}: ${sg.quantity} pz</span>`
-            ).join("");
+            const sgs = (c.subgroups||[]).map(sg => {
+                const uCost = unitFullCost(sg, c);
+                const uPrice = sgPrice(sg, c);
+                const isPriceManual = sg.unitPrice > 0;
+                return `<div class="sg-pill">
+                    <span style="font-weight:600;">${esc(sg.type)}</span>
+                    <span style="color:var(--ink-muted)"> × ${sg.quantity}</span>
+                    <span style="margin-left:0.3rem;">· costo ${fmt(uCost)}/pz</span>
+                    <span style="color:var(--clay-dark);font-weight:600;"> → ${fmt(uPrice)}/pz${isPriceManual?' <span title="Prezzo manuale" style="font-size:0.65rem;">✎</span>':''}</span>
+                </div>`;
+            }).join("");
 
             // Barra progresso (max 5 segmenti)
             const segs = Math.min(tot,5);
@@ -1294,7 +1308,12 @@
                 ${tot>0 ? `<div class="lot-card-footer"><div class="lot-progress">${progressBar}</div><span style="font-size:0.72rem;color:var(--ink-muted);">${soldCount} venduti</span></div>` : ""}
                 <div class="lot-expanded" id="exp-${c.id}">
                     ${sgs ? `<div class="lot-expanded-title">Sottogruppi</div><div class="sg-pill-list">${sgs}</div>` : ""}
-                    <div style="margin-top:0.6rem;font-size:0.78rem;color:var(--ink-muted);">Costo lotto: ${fmt(cost)} · Margine stimato: ${cost>0?(((price-cost)/price)*100).toFixed(0):0}%</div>
+                    <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--dust);display:flex;flex-wrap:wrap;gap:0.75rem;font-size:0.78rem;color:var(--ink-muted);">
+                        <span>Costo tot: <strong style="color:var(--ink);">${fmt(cost)}</strong></span>
+                        <span>Prezzo tot: <strong style="color:var(--clay-dark);">${fmt(price)}</strong></span>
+                        <span>Margine: <strong style="color:var(--success);">${cost>0?(((price-cost)/price)*100).toFixed(0):0}%</strong></span>
+                        ${fireCostPerPiece(c)>0?`<span>Cottura/pz: <strong>${fmt(fireCostPerPiece(c))}</strong></span>`:''}
+                    </div>
                     <div class="lot-actions-row">
                         <button class="btn btn-subtle btn-sm" onclick="openLotModal('${c.id}'); event.stopPropagation()">Modifica</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteLot('${c.id}'); event.stopPropagation()">Elimina</button>
