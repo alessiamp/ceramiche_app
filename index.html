@@ -731,6 +731,57 @@
 .quote-result-main .stat-value {
     font-size: 1.5rem;
 }
+
+        /* ── FORM PREVENTIVATORE UNIFORME ───────────────── */
+
+#view-quote .settings-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+#view-quote .settings-row .form-label {
+    margin: 0;
+}
+
+#view-quote .settings-row .form-control,
+#view-quote .settings-row select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#view-quote .quote-check-list {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#view-quote .form-section {
+    margin-bottom: 16px;
+}
+
+#view-quote .form-section-title {
+    margin-bottom: 14px;
+}
+
+#view-quote .stat-card {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+#view-quote .stat-card:last-child {
+    margin-bottom: 0;
+}
+
+#view-quote #quote-multiplier {
+    width: 100%;
+}
+
+#view-quote .quote-check-item {
+    width: 100%;
+    box-sizing: border-box;
+}
     
     </style>
 </head>
@@ -895,13 +946,19 @@
             <select class="form-control" id="quote-fire2"></select>
         </div>
 
-        <div class="settings-row">
-            <label class="form-label">Moltiplicatore prezzo</label>
-            <input type="number" class="form-control" id="quote-multiplier"
-                   value="3.5" min="1" step="0.5">
-            <span>×</span>
-        </div>
+       <div class="settings-row">
+    <label class="form-label">Moltiplicatore prezzo</label>
+    <div style="display:flex; align-items:center; gap:8px; width:100%;">
+        <input type="number"
+               class="form-control"
+               id="quote-multiplier"
+               value="3.5"
+               min="1"
+               step="0.5"
+               style="flex:1;">
+        <span>×</span>
     </div>
+</div>
 
     <div class="form-section">
         <div class="form-section-title">Risultato</div>
