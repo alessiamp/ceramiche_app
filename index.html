@@ -1176,7 +1176,6 @@
         ["ovens","argille","colori_smalti","cristalline","firings","sales","scraps","ceramics"]
             .forEach(k => { if(!D[k]) D[k] = DEFAULTS[k] || []; });
         
-        // Se configurato, prova a scaricare gli aggiornamenti dal cloud all'avvio in background
         if(syncConfig.token && syncConfig.gistId) {
             pullFromCloudSilent();
         }
@@ -1859,7 +1858,6 @@
 
     function switchView(id) {
         document.querySelectorAll(".view-section").forEach(s=>s.classList.remove("active"));
-        document.querySelectorAll(".tab-btn").forEach(b=>b.classList.0 && b.classList.remove("active"));
         document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
         document.getElementById(id).classList.add("active");
         document.querySelector(`.tab-btn[data-view="${id}"]`).classList.add("active");
