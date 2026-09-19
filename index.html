@@ -937,13 +937,32 @@
 </div>
 
         <div class="settings-row">
-            <label class="form-label">Cottura 1</label>
-            <select class="form-control" id="quote-fire1"></select>
+            <label class="form-label">Forno</label>
+            <select class="form-control" id="quote-oven"></select>
         </div>
 
         <div class="settings-row">
-            <label class="form-label">Cottura 2</label>
-            <select class="form-control" id="quote-fire2"></select>
+            <label class="form-label">Pezzi per infornata</label>
+            <input type="number" class="form-control" id="quote-load"
+                   value="20" min="1" step="1">
+        </div>
+
+        <div class="settings-row">
+            <label class="form-label">1ª cottura (biscotto)</label>
+            <select class="form-control" id="quote-fire1">
+                <option value="">Nessuna</option>
+                <option value="bassa" selected>Bassa temperatura</option>
+                <option value="alta">Alta temperatura</option>
+            </select>
+        </div>
+
+        <div class="settings-row">
+            <label class="form-label">2ª cottura (smalto)</label>
+            <select class="form-control" id="quote-fire2">
+                <option value="">Nessuna</option>
+                <option value="bassa">Bassa temperatura</option>
+                <option value="alta" selected>Alta temperatura</option>
+            </select>
         </div>
 
        <div class="settings-row">
@@ -1188,6 +1207,7 @@
                 <div class="form-stack">
                     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="sale-date"></div>
                     <div class="form-group"><label class="form-label">Lotto</label><select class="form-control" id="sale-ceramic"><option value="">Seleziona lotto…</option></select></div>
+                    <div class="form-group" id="sale-desc-wrap" style="display:none;"><label class="form-label">Descrizione articolo</label><input type="text" class="form-control" id="sale-desc" placeholder="es. Tazza personalizzata"></div>
                     <div class="form-group"><label class="form-label">Quantità</label><input type="number" class="form-control" id="sale-qty" value="1" min="1"></div>
                     <div class="form-group"><label class="form-label">Totale incassato (€)</label><input type="number" class="form-control" id="sale-price" step="0.01" placeholder="0,00"></div>
                     <div class="form-group"><label class="form-label">Note</label><input type="text" class="form-control" id="sale-notes" placeholder="Facoltativo"></div>
@@ -1380,7 +1400,10 @@
     }
     // ── DATI ─────────────────────────────────────────
     const DEFAULTS = {
-        ovens: [{id:"ov1", name:"Forno Grande", lowTempCost:60, highTempCost:100}],
+        ovens: [
+            {id:"ov1", name:"Forno Grande", lowTempCost:60, highTempCost:100},
+            {id:"ov2", name:"Forno Piccolo", lowTempCost:35, highTempCost:70}
+        ],
         argille: [{id:"clay1", name:"Gres Bianco 25kg", kg:25, prezzo:32}],
         colori_smalti: [{id:"sm1", name:"Smalto Bianco", prezzo:10, quantita:1, color:"#ffffff"}],
         cristalline: [],
@@ -1472,7 +1495,12 @@
         D = s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULTS));
         ["ovens","argille","colori_smalti","cristalline","firings","sales","scraps","ceramics"]
             .forEach(k => { if(!D[k]) D[k] = DEFAULTS[k] || []; });
-        
+
+        // Migrazione: assicura che esista anche il Forno Piccolo
+        if(!D.ovens.some(o => /piccolo/i.test(o.name||""))) {
+            D.ovens.push({id:uid("ov"), name:"Forno Piccolo", lowTempCost:35, highTempCost:70});
+        }
+
         if(syncConfig.token && syncConfig.gistId) {
             pullFromCloudSilent();
         }
@@ -1547,20 +1575,32 @@
         });
         return matCost;
     }
+    // Conta i pezzi totali di TUTTI i lotti che usano una certa cottura,
+    // così il costo del forno viene ripartito su tutti i pezzi infornati.
+    function firingPieceCount(firingId) {
+        let n = 0;
+        D.ceramics.forEach(function(c) {
+            if(c.fire1Id === firingId || c.fire2Id === firingId) {
+                n += totalPieces(c);
+            }
+        });
+        return Math.max(1, n);
+    }
     function fireCostPerPiece(c) {
-        const tot = Math.max(1, totalPieces(c));
         let fire = 0;
         [c.fire1Id,c.fire2Id].filter(Boolean).forEach(function(fId) {
             const f = D.firings.find(x=>x.id===fId);
-            if(f) fire += f.totalCost;
+            if(f) fire += f.totalCost / firingPieceCount(fId);
         });
-        return fire / tot;
+        return fire;
     }
     function unitFullCost(sg, c) {
         return unitMatCost(sg.unitWeight||0, c.clayId, c.glazeIds) + fireCostPerPiece(c);
     }
     function sgPrice(sg, c) {
-        if(sg.unitPrice>0) return sg.unitPrice;
+        // Prezzo manuale solo se impostato esplicitamente;
+        // altrimenti ricalcola sempre da costo × moltiplicatore.
+        if(sg.manualPrice && sg.unitPrice>0) return sg.unitPrice;
         return unitFullCost(sg,c) * (c.multiplier||3.5);
     }
     function lotPrice(c) {
@@ -1610,6 +1650,7 @@
             btn.classList.add("active");
             document.getElementById(target).classList.add("active");
             if(target === "view-lots") renderLots();
+            if(target === "view-quote") renderQuoteOptions();
         });
     });
 
@@ -1709,7 +1750,7 @@
             const sgs = (c.subgroups||[]).map(sg => {
                 const uCost = unitFullCost(sg, c);
                 const uPrice = sgPrice(sg, c);
-                const isPriceManual = sg.unitPrice > 0;
+                const isPriceManual = sg.manualPrice === true;
                 return `<div class="sg-pill">
                     <span style="font-weight:600;">${esc(sg.type)}</span>
                     <span style="color:var(--ink-muted)"> × ${sg.quantity}</span>
@@ -1952,9 +1993,12 @@
         }
         list.innerHTML=D.sales.slice().reverse().map(s=>{
             const c=D.ceramics.find(x=>x.id===s.ceramicId);
+            const title = c ? esc(c.name)
+                : (s.description ? esc(s.description)+' <span style="font-size:0.65rem;color:var(--ink-muted);font-weight:500;">(libera)</span>'
+                : (s.ceramicId ? "Lotto rimosso" : "Vendita libera"));
             return `<div class="entry-card">
                 <div class="entry-card-info">
-                    <div class="entry-main">${c?esc(c.name):"Lotto rimosso"}</div>
+                    <div class="entry-main">${title}</div>
                     <div class="entry-meta">${s.date} · ${s.quantity} pz ${s.notes?'· '+esc(s.notes):''}</div>
                 </div>
                 <div class="entry-value green">${fmt(s.totalPrice)}</div>
@@ -1968,17 +2012,38 @@
         document.getElementById("sale-qty").value=1;
         document.getElementById("sale-price").value="";
         document.getElementById("sale-notes").value="";
+        document.getElementById("sale-desc").value="";
+        document.getElementById("sale-desc-wrap").style.display="none";
         const sel=document.getElementById("sale-ceramic");
-        sel.innerHTML='<option value="">Seleziona lotto…</option>';
+        sel.innerHTML='<option value="">Seleziona lotto…</option><option value="__free__">➕ Vendita libera (senza lotto)</option>';
         D.ceramics.forEach(c=>{const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; sel.appendChild(o);});
         openModal("sale-modal");
     });
 
+    document.getElementById("sale-ceramic").addEventListener("change", function(){
+        document.getElementById("sale-desc-wrap").style.display = this.value==="__free__" ? "flex" : "none";
+    });
+
     document.getElementById("save-sale-btn").addEventListener("click", ()=>{
         const ceramicId=document.getElementById("sale-ceramic").value;
+        const desc=document.getElementById("sale-desc").value.trim();
         const price=parseFloat(document.getElementById("sale-price").value)||0;
-        if(!ceramicId){toast("Seleziona un lotto"); return;}
-        D.sales.push({id:uid("s"), date:document.getElementById("sale-date").value, ceramicId, quantity:parseInt(document.getElementById("sale-qty").value)||1, totalPrice:price, notes:document.getElementById("sale-notes").value});
+        if(!ceramicId){toast("Seleziona un lotto o scegli Vendita libera"); return;}
+        const saleObj={
+            id:uid("s"),
+            date:document.getElementById("sale-date").value,
+            quantity:parseInt(document.getElementById("sale-qty").value)||1,
+            totalPrice:price,
+            notes:document.getElementById("sale-notes").value
+        };
+        if(ceramicId==="__free__"){
+            if(!desc){toast("Inserisci una descrizione per la vendita libera"); document.getElementById("sale-desc").focus(); return;}
+            saleObj.ceramicId="";
+            saleObj.description=desc;
+        } else {
+            saleObj.ceramicId=ceramicId;
+        }
+        D.sales.push(saleObj);
         save(); closeModal("sale-modal"); renderAll(); toast("Vendita registrata ✓");
     });
 
@@ -2266,19 +2331,28 @@
 function renderQuoteOptions() {
     const clay = document.getElementById("quote-clay");
     const glazes = document.getElementById("quote-glazes");
-    const fire1 = document.getElementById("quote-fire1");
-    const fire2 = document.getElementById("quote-fire2");
+    const oven = document.getElementById("quote-oven");
+    if(!clay || !glazes || !oven) return;
 
-    if(!clay || !glazes || !fire1 || !fire2) return;
+    // Conserva le selezioni correnti
+    const prevClay = clay.value;
+    const prevOven = oven.value;
+    const prevGlazes = [...document.querySelectorAll("#quote-glazes input[type=checkbox]:checked")]
+        .map(cb => cb.value);
 
     clay.innerHTML =
         '<option value="">Seleziona argilla</option>' +
         D.argille.map(x =>
             `<option value="${esc(x.id)}">${esc(x.name)}</option>`
         ).join("");
+    if(prevClay) clay.value = prevClay;
+
+    oven.innerHTML = D.ovens.length
+        ? D.ovens.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")
+        : '<option value="">Nessun forno</option>';
+    if(prevOven) oven.value = prevOven;
 
     const allGlazes = [...D.colori_smalti, ...D.cristalline];
-
     glazes.innerHTML = allGlazes.length
         ? allGlazes.map(x => `
             <label class="quote-check-item">
@@ -2287,15 +2361,65 @@ function renderQuoteOptions() {
             </label>
         `).join("")
         : '<div style="color:var(--ink-muted); font-size:.85rem;">Nessuno smalto disponibile</div>';
+    document.querySelectorAll("#quote-glazes input[type=checkbox]").forEach(cb => {
+        if(prevGlazes.includes(cb.value)) cb.checked = true;
+    });
 
-    const fireOptions =
-        '<option value="">Nessuna</option>' +
-        D.firings.map(x =>
-            `<option value="${esc(x.id)}">${esc(x.name || x.date || "Cottura")}</option>`
-        ).join("");
+    bindQuoteEvents();
+    calcQuote();
+}
 
-    fire1.innerHTML = fireOptions;
-    fire2.innerHTML = fireOptions;
+function bindQuoteEvents() {
+    const ids = ["quote-clay","quote-weight","quote-oven","quote-load",
+                 "quote-fire1","quote-fire2","quote-multiplier"];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if(el && !el.dataset.qbound) {
+            el.addEventListener("input", calcQuote);
+            el.addEventListener("change", calcQuote);
+            el.dataset.qbound = "1";
+        }
+    });
+    // le checkbox smalti vengono ricreate ogni volta: ribinda sempre
+    document.querySelectorAll("#quote-glazes input[type=checkbox]").forEach(cb => {
+        cb.addEventListener("change", calcQuote);
+    });
+}
+
+function calcQuote() {
+    const clayEl = document.getElementById("quote-clay");
+    if(!clayEl) return;
+
+    const clayId  = clayEl.value;
+    const weight  = parseFloat(document.getElementById("quote-weight").value) || 0;
+    const ovenId  = document.getElementById("quote-oven").value;
+    const load    = Math.max(1, parseInt(document.getElementById("quote-load").value) || 1);
+    const temp1   = document.getElementById("quote-fire1").value;
+    const temp2   = document.getElementById("quote-fire2").value;
+    const mult    = parseFloat(document.getElementById("quote-multiplier").value) || 3.5;
+    const glazeIds = [...document.querySelectorAll("#quote-glazes input[type=checkbox]:checked")]
+        .map(cb => cb.value);
+
+    const matCost = unitMatCost(weight, clayId, glazeIds);
+
+    const oven = D.ovens.find(o => o.id === ovenId);
+    function tempCost(t) {
+        if(!oven || !t) return 0;
+        if(t === "bassa") return (oven.lowTempCost || 0) / load;
+        if(t === "alta")  return (oven.highTempCost || 0) / load;
+        return 0;
+    }
+    const fireCost = tempCost(temp1) + tempCost(temp2);
+
+    const unitCost = matCost + fireCost;
+    const price = unitCost * mult;
+    const margin = price - unitCost;
+
+    document.getElementById("quote-material-cost").textContent = fmt(matCost);
+    document.getElementById("quote-fire-cost").textContent = fmt(fireCost);
+    document.getElementById("quote-unit-cost").textContent = fmt(unitCost);
+    document.getElementById("quote-unit-price").textContent = fmt(price);
+    document.getElementById("quote-unit-margin").textContent = fmt(margin);
 }
         load();
     renderAll();
