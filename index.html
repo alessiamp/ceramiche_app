@@ -91,6 +91,7 @@
         }
         .tab-btn {
             flex: 1;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -100,9 +101,10 @@
             border: none;
             cursor: pointer;
             color: var(--ink-muted);
-            font-size: 0.62rem;
+            font-size: 0.56rem;
             font-weight: 500;
             padding: 0.4rem 0;
+            white-space: nowrap;
             transition: color 0.15s;
         }
         .tab-btn .tab-icon { font-size: 1.3rem; line-height: 1; }
@@ -710,6 +712,30 @@
             white-space: nowrap;
         }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── GRAFICI ─────────────────────────────────── */
+        .chart-row { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; }
+        .chart-label { width:64px; flex-shrink:0; font-size:0.72rem; color:var(--ink-mid); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .chart-track { flex:1; background:var(--clay-light); border-radius:4px; height:18px; overflow:hidden; }
+        .chart-fill { height:100%; border-radius:4px; min-width:2px; }
+        .chart-val { width:62px; flex-shrink:0; text-align:right; font-size:0.72rem; font-weight:700; }
+
+        /* ── STATO RAPIDO SU CARD ─────────────────────── */
+        .lot-status-select {
+            border: none;
+            border-radius: 20px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.2rem 1.1rem 0.2rem 0.55rem;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            max-width: 160px;
+            background-repeat: no-repeat;
+            background-position: right 0.4rem center;
+            background-size: 0.5rem;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'><path d='M0 0l5 6 5-6z' fill='%234A3728'/></svg>");
+        }
    
     /* ── PREVENTIVATORE ───────────────────────────── */
 
@@ -887,6 +913,11 @@
                     <div class="stat-value green" id="ds-sales">€0</div>
                     <div class="stat-sub">vendite</div>
                 </div>
+                <div class="stat-card full">
+                    <div class="stat-label">Perdite scarti</div>
+                    <div class="stat-value" id="ds-scrap-loss" style="color:var(--danger);">€0</div>
+                    <div class="stat-sub"><span id="ds-scrap-count">0</span> pezzi scartati · <span id="ds-scrap-rate">0%</span> del prodotto</div>
+                </div>
             </div>
 
             <div class="alert-banner hidden" id="kiln-banner">
@@ -920,6 +951,16 @@
                 <span class="section-title">Vendite</span>
                 <button class="btn btn-sm" id="btn-new-sale">+ Registra</button>
             </div>
+            <div class="search-row">
+                <input type="text" class="search-input" id="sales-search" placeholder="🔍  Cerca vendita…">
+            </div>
+            <div class="filter-row" style="align-items:center;">
+                <span style="font-size:0.7rem;color:var(--ink-muted);flex-shrink:0;">Da</span>
+                <input type="date" class="filter-select" id="sales-from">
+                <span style="font-size:0.7rem;color:var(--ink-muted);flex-shrink:0;">A</span>
+                <input type="date" class="filter-select" id="sales-to">
+                <span class="filter-chip" id="sales-clear">Azzera</span>
+            </div>
             <div class="entry-list" id="sales-list"></div>
         </section>
 
@@ -928,6 +969,16 @@
             <div class="section-header">
                 <span class="section-title">Rotture & Scarti</span>
                 <button class="btn btn-sm" id="btn-new-scrap">+ Registra</button>
+            </div>
+            <div class="search-row">
+                <input type="text" class="search-input" id="scraps-search" placeholder="🔍  Cerca scarto…">
+            </div>
+            <div class="filter-row" style="align-items:center;">
+                <span style="font-size:0.7rem;color:var(--ink-muted);flex-shrink:0;">Da</span>
+                <input type="date" class="filter-select" id="scraps-from">
+                <span style="font-size:0.7rem;color:var(--ink-muted);flex-shrink:0;">A</span>
+                <input type="date" class="filter-select" id="scraps-to">
+                <span class="filter-chip" id="scraps-clear">Azzera</span>
             </div>
             <div class="entry-list" id="scraps-list"></div>
         </section>
@@ -1041,6 +1092,18 @@
     </div>
 
 </section>
+        <section id="view-charts" class="view-section">
+            <div class="section-header"><span class="section-title">Grafici</span></div>
+            <div class="stat-card" style="margin-bottom:1rem;">
+                <div class="stat-label" style="margin-bottom:0.75rem;">Incassato per mese</div>
+                <div id="chart-sales"></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label" style="margin-bottom:0.75rem;">Margine potenziale per lotto</div>
+                <div id="chart-margin"></div>
+            </div>
+        </section>
+
         <section id="view-settings" class="view-section">
             <div class="section-title" style="margin-bottom:1rem;">Impostazioni</div>
 
@@ -1090,6 +1153,14 @@
             </div>
 
             <div class="settings-section">
+                <div class="settings-section-title">Esporta per Excel (CSV)</div>
+                <div class="backup-btns">
+                    <button class="btn btn-ghost" id="btn-csv-sales">Vendite CSV</button>
+                    <button class="btn btn-ghost" id="btn-csv-scraps">Scarti CSV</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <div class="settings-section-title">Backup Dati Locale</div>
                 <div class="backup-btns">
                     <button class="btn btn-ghost" id="btn-export">⬇ Esporta</button>
@@ -1118,6 +1189,9 @@
         <button class="tab-btn" data-view="view-quote">
     <span class="tab-icon">🧮</span>Preventivo
 </button>
+        <button class="tab-btn" data-view="view-charts">
+            <span class="tab-icon">📊</span>Grafici
+        </button>
         <button class="tab-btn" data-view="view-settings">
             <span class="tab-icon">⚙️</span>Altro
         </button>
@@ -1239,6 +1313,7 @@
                 <div class="form-stack">
                     <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-control" id="sale-date"></div>
                     <div class="form-group"><label class="form-label">Lotto</label><select class="form-control" id="sale-ceramic"><option value="">Seleziona lotto…</option></select></div>
+                    <div class="form-group" id="sale-subgroup-wrap" style="display:none;"><label class="form-label">Oggetto</label><select class="form-control" id="sale-subgroup" disabled><option value="">Seleziona prima il lotto…</option></select></div>
                     <div class="form-group" id="sale-desc-wrap" style="display:none;"><label class="form-label">Descrizione articolo</label><input type="text" class="form-control" id="sale-desc" placeholder="es. Tazza personalizzata"></div>
                     <div class="form-group"><label class="form-label">Quantità</label><input type="number" class="form-control" id="sale-qty" value="1" min="1"></div>
                     <div class="form-group"><label class="form-label">Totale incassato (€)</label><input type="number" class="form-control" id="sale-price" step="0.01" placeholder="0,00"></div>
@@ -1724,6 +1799,7 @@
             document.getElementById(target).classList.add("active");
             if(target === "view-lots") renderLots();
             if(target === "view-quote") renderQuoteOptions();
+            if(target === "view-charts") renderCharts();
         });
     });
 
@@ -1771,6 +1847,12 @@
         document.getElementById("ds-margin").textContent = cost>0&&pot>0 ? (((pot-cost)/pot)*100).toFixed(0)+"%" : "0%";
         document.getElementById("ds-sales").textContent = fmt(sales);
 
+        let scrapLoss=0, scrapPieces=0;
+        D.scraps.forEach(sc=>{ scrapLoss += (sc.totalCost||0); scrapPieces += (sc.quantity||0); });
+        document.getElementById("ds-scrap-loss").textContent = fmt(scrapLoss);
+        document.getElementById("ds-scrap-count").textContent = scrapPieces;
+        document.getElementById("ds-scrap-rate").textContent = (pz>0 ? (scrapPieces/pz*100) : 0).toFixed(0)+"%";
+
         const waiting = D.ceramics.filter(c=>c.status==="Da cuocere"||c.status==="Da cuocere (seconda)").length;
         const banner = document.getElementById("kiln-banner");
         if(waiting>0) { banner.classList.remove("hidden"); document.getElementById("kiln-count").textContent=waiting; }
@@ -1781,6 +1863,7 @@
     let filterStatus = "", filterClay = "";
 
     function renderLots() {
+        const openIds = [...document.querySelectorAll(".lot-expanded.open")].map(el=>el.id.replace("exp-",""));
         renderDashboard();
         const q = document.getElementById("search-input").value.toLowerCase();
         const clayFilter = document.getElementById("clay-filter");
@@ -1846,7 +1929,7 @@
                     <div class="lot-info">
                         <div class="lot-name">${esc(c.name)}</div>
                         <div class="lot-meta">
-                            ${statusBadge(c.status)}
+                            <select class="lot-status-select" style="background-color:${(STATUS_COLORS[c.status]||['#E8DDD4','#4A3728'])[0]};color:${(STATUS_COLORS[c.status]||['#E8DDD4','#4A3728'])[1]};" onclick="event.stopPropagation()" onchange="changeLotStatus('${c.id}', this.value); event.stopPropagation()">${statusOptions(c.status)}</select>
                             ${clay ? `<span>·</span><span>${esc(clay.name)}</span>` : ""}
                         </div>
                     </div>
@@ -1868,15 +1951,25 @@
                     </div>
                     <div class="lot-actions-row">
                         <button class="btn btn-subtle btn-sm" onclick="openLotModal('${c.id}'); event.stopPropagation()">Modifica</button>
+                        <button class="btn btn-neutral btn-sm" onclick="duplicateLot('${c.id}'); event.stopPropagation()">Duplica</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteLot('${c.id}'); event.stopPropagation()">Elimina</button>
                     </div>
                 </div>
             </div>`;
         }).join("");
+
+        openIds.forEach(id=>{ const el=document.getElementById("exp-"+id); if(el) el.classList.add("open"); });
     }
 
     window.toggleLotExpand = function(id) {
         document.getElementById("exp-"+id).classList.toggle("open");
+    };
+
+    window.changeLotStatus = function(id, value) {
+        const c=D.ceramics.find(x=>x.id===id);
+        if(!c) return;
+        c.status=value;
+        save(); renderLots(); toast("Stato aggiornato ✓");
     };
 
     document.getElementById("status-chips").addEventListener("click", e => {
@@ -2058,6 +2151,22 @@
     document.getElementById("btn-header-add").addEventListener("click", ()=>{ switchView("view-lots"); openLotModal(); });
     window.openLotModal = openLotModal;
 
+    window.duplicateLot = function(id) {
+        const src=D.ceramics.find(x=>x.id===id);
+        if(!src) return;
+        const copy=JSON.parse(JSON.stringify(src));
+        copy.id=uid("c");
+        copy.name=(src.name||"Lotto")+" (copia)";
+        copy.status="In lavorazione";
+        copy.creationDate=today();
+        copy.subgroups=(src.subgroups||[]).map(sg=>Object.assign({},sg,{
+            id:uid("sg"), soldQuantity:0, scrappedQuantity:0, status:"In lavorazione"
+        }));
+        D.ceramics.push(copy);
+        save(); renderAll(); toast("Lotto duplicato ✓");
+        openLotModal(copy.id);
+    };
+
     window.deleteLot = async function(id) {
         const c=D.ceramics.find(x=>x.id===id);
         if(!(await confirm("Eliminare "+c.name+"?", "Anche le vendite e gli scarti collegati resteranno in memoria."))) return;
@@ -2068,13 +2177,28 @@
     // ── VENDITE ──────────────────────────────────────
     function renderSales() {
         const list=document.getElementById("sales-list");
-        if(!D.sales.length){
-            list.innerHTML=`<div class="empty-state"><div class="empty-icon">💶</div><div class="empty-label">Nessuna vendita registrata.</div></div>`;
+        const se=document.getElementById("sales-search");
+        const q=(se?se.value:"").toLowerCase();
+        const from=(document.getElementById("sales-from")||{}).value||"";
+        const to=(document.getElementById("sales-to")||{}).value||"";
+        const rows=D.sales.slice().reverse().filter(s=>{
+            if(from && (s.date||"")<from) return false;
+            if(to && (s.date||"")>to) return false;
+            if(q){
+                const c=D.ceramics.find(x=>x.id===s.ceramicId);
+                const hay=((c?c.name:(s.description||""))+" "+(s.objectName||"")+" "+(s.notes||"")).toLowerCase();
+                if(!hay.includes(q)) return false;
+            }
+            return true;
+        });
+        if(!rows.length){
+            list.innerHTML=`<div class="empty-state"><div class="empty-icon">💶</div><div class="empty-label">${D.sales.length?"Nessuna vendita per questo filtro.":"Nessuna vendita registrata."}</div></div>`;
             return;
         }
-        list.innerHTML=D.sales.slice().reverse().map(s=>{
+        list.innerHTML=rows.map(s=>{
             const c=D.ceramics.find(x=>x.id===s.ceramicId);
-            const title = c ? esc(c.name)
+            const title = c
+                ? esc(c.name) + (s.objectName?' <span style="color:var(--ink-muted);font-weight:500;">· '+esc(s.objectName)+'</span>':'')
                 : (s.description ? esc(s.description)+' <span style="font-size:0.65rem;color:var(--ink-muted);font-weight:500;">(libera)</span>'
                 : (s.ceramicId ? "Lotto rimosso" : "Vendita libera"));
             return `<div class="entry-card">
@@ -2095,25 +2219,57 @@
         document.getElementById("sale-notes").value="";
         document.getElementById("sale-desc").value="";
         document.getElementById("sale-desc-wrap").style.display="none";
+        document.getElementById("sale-subgroup-wrap").style.display="none";
+        const ssg=document.getElementById("sale-subgroup"); ssg.innerHTML='<option value="">Seleziona prima il lotto…</option>'; ssg.disabled=true;
         const sel=document.getElementById("sale-ceramic");
         sel.innerHTML='<option value="">Seleziona lotto…</option><option value="__free__">➕ Vendita libera (senza lotto)</option>';
         D.ceramics.forEach(c=>{const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; sel.appendChild(o);});
         openModal("sale-modal");
     });
 
+    function populateSaleSubgroups(){
+        const ceramicId=document.getElementById("sale-ceramic").value;
+        const sel=document.getElementById("sale-subgroup");
+        const qty=document.getElementById("sale-qty");
+        sel.innerHTML='<option value="">Seleziona oggetto…</option>'; sel.disabled=true; qty.max="";
+        const c=D.ceramics.find(x=>x.id===ceramicId);
+        if(!c) return;
+        const available=(c.subgroups||[]).filter(sg=>subgroupRemaining(sg)>0);
+        available.forEach(sg=>{
+            const o=document.createElement("option");
+            o.value=sg.id; o.textContent=sg.type+" · "+subgroupRemaining(sg)+" pz disponibili";
+            sel.appendChild(o);
+        });
+        sel.disabled=available.length===0;
+        if(!available.length) sel.innerHTML='<option value="">Nessun pezzo disponibile</option>';
+        else if(available.length===1) sel.value=available[0].id;
+    }
+
     document.getElementById("sale-ceramic").addEventListener("change", function(){
-        document.getElementById("sale-desc-wrap").style.display = this.value==="__free__" ? "flex" : "none";
+        const free=this.value==="__free__";
+        const isLot=this.value && !free;
+        document.getElementById("sale-desc-wrap").style.display = free ? "flex" : "none";
+        document.getElementById("sale-subgroup-wrap").style.display = isLot ? "flex" : "none";
+        if(isLot) populateSaleSubgroups();
+    });
+
+    document.getElementById("sale-subgroup").addEventListener("change", function(){
+        const c=D.ceramics.find(x=>x.id===document.getElementById("sale-ceramic").value);
+        const sg=c&&(c.subgroups||[]).find(x=>x.id===this.value);
+        const qty=document.getElementById("sale-qty");
+        if(sg){ qty.max=subgroupRemaining(sg); qty.value=Math.min(parseInt(qty.value)||1, subgroupRemaining(sg)); } else qty.max="";
     });
 
     document.getElementById("save-sale-btn").addEventListener("click", ()=>{
         const ceramicId=document.getElementById("sale-ceramic").value;
         const desc=document.getElementById("sale-desc").value.trim();
         const price=parseFloat(document.getElementById("sale-price").value)||0;
+        const quantity=parseInt(document.getElementById("sale-qty").value)||1;
         if(!ceramicId){toast("Seleziona un lotto o scegli Vendita libera"); return;}
         const saleObj={
             id:uid("s"),
             date:document.getElementById("sale-date").value,
-            quantity:parseInt(document.getElementById("sale-qty").value)||1,
+            quantity:quantity,
             totalPrice:price,
             notes:document.getElementById("sale-notes").value
         };
@@ -2122,25 +2278,54 @@
             saleObj.ceramicId="";
             saleObj.description=desc;
         } else {
+            const c=D.ceramics.find(x=>x.id===ceramicId);
+            const subgroupId=document.getElementById("sale-subgroup").value;
+            const sg=c&&(c.subgroups||[]).find(x=>x.id===subgroupId);
+            if(!sg){toast("Seleziona l'oggetto venduto"); return;}
+            const available=subgroupRemaining(sg);
+            if(quantity<1||quantity>available){toast("Quantità non disponibile (max "+available+")"); return;}
+            sg.soldQuantity=(sg.soldQuantity||0)+quantity;
             saleObj.ceramicId=ceramicId;
+            saleObj.subgroupId=subgroupId;
+            saleObj.objectName=sg.type;
         }
         D.sales.push(saleObj);
         save(); closeModal("sale-modal"); renderAll(); toast("Vendita registrata ✓");
     });
 
     window.deleteSale = async function(id) {
+        const s=D.sales.find(x=>x.id===id);
         if(!(await confirm("Eliminare questa vendita?"))) return;
+        if(s && s.subgroupId){
+            const c=D.ceramics.find(x=>x.id===s.ceramicId);
+            const sg=c&&(c.subgroups||[]).find(x=>x.id===s.subgroupId);
+            if(sg) sg.soldQuantity=Math.max(0,(sg.soldQuantity||0)-(s.quantity||0));
+        }
         D.sales=D.sales.filter(x=>x.id!==id); save(); renderAll(); toast("Vendita eliminata");
     };
 
     // ── SCARTI ───────────────────────────────────────
     function renderScraps() {
         const list=document.getElementById("scraps-list");
-        if(!D.scraps.length){
-            list.innerHTML=`<div class="empty-state"><div class="empty-icon">💔</div><div class="empty-label">Nessun scarto registrato.</div></div>`;
+        const se=document.getElementById("scraps-search");
+        const q=(se?se.value:"").toLowerCase();
+        const from=(document.getElementById("scraps-from")||{}).value||"";
+        const to=(document.getElementById("scraps-to")||{}).value||"";
+        const rows=D.scraps.slice().reverse().filter(sc=>{
+            if(from && (sc.date||"")<from) return false;
+            if(to && (sc.date||"")>to) return false;
+            if(q){
+                const c=D.ceramics.find(x=>x.id===sc.ceramicId);
+                const hay=((c?c.name:"")+" "+(sc.objectName||"")+" "+(sc.phase||"")+" "+(sc.notes||"")).toLowerCase();
+                if(!hay.includes(q)) return false;
+            }
+            return true;
+        });
+        if(!rows.length){
+            list.innerHTML=`<div class="empty-state"><div class="empty-icon">💔</div><div class="empty-label">${D.scraps.length?"Nessuno scarto per questo filtro.":"Nessun scarto registrato."}</div></div>`;
             return;
         }
-        list.innerHTML=D.scraps.slice().reverse().map(sc=>{
+        list.innerHTML=rows.map(sc=>{
             const c=D.ceramics.find(x=>x.id===sc.ceramicId);
             const sg=c&&(c.subgroups||[]).find(x=>x.id===sc.subgroupId);
             const objectName=sc.objectName||(sg&&sg.type)||"Oggetto";
@@ -2375,6 +2560,51 @@
     }
 
     // Backup
+    // ── EXPORT CSV ───────────────────────────────────
+    function csvCell(v){ const s=String(v==null?"":v); return /[";\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+    function csvNum(n){ return (parseFloat(n)||0).toFixed(2).replace('.',','); }
+    function downloadCSV(filename, rows){
+        const content="\uFEFF"+rows.map(r=>r.map(csvCell).join(";")).join("\r\n");
+        const blob=new Blob([content],{type:"text/csv;charset=utf-8;"});
+        const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+    }
+    document.getElementById("btn-csv-sales").addEventListener("click", ()=>{
+        const rows=[["Data","Tipo","Lotto / Descrizione","Oggetto","Quantità","Totale incassato (€)","Note"]];
+        D.sales.forEach(s=>{
+            const c=D.ceramics.find(x=>x.id===s.ceramicId);
+            rows.push([s.date||"", c?"Lotto":"Libera", c?c.name:(s.description||""), s.objectName||"", s.quantity||0, csvNum(s.totalPrice), s.notes||""]);
+        });
+        downloadCSV("vendite-"+today()+".csv", rows); toast("CSV vendite esportato ✓");
+    });
+    document.getElementById("btn-csv-scraps").addEventListener("click", ()=>{
+        const rows=[["Data","Lotto","Oggetto","Quantità","Fase","Costo unitario (€)","Costo totale (€)","Note"]];
+        D.scraps.forEach(sc=>{
+            const c=D.ceramics.find(x=>x.id===sc.ceramicId);
+            rows.push([sc.date||"", c?c.name:"(lotto rimosso)", sc.objectName||"", sc.quantity||0, sc.phase||"", csvNum(sc.unitCost), csvNum(sc.totalCost), sc.notes||""]);
+        });
+        downloadCSV("scarti-"+today()+".csv", rows); toast("CSV scarti esportato ✓");
+    });
+
+    // ── FILTRI VENDITE / SCARTI ──────────────────────
+    ["sales-search","sales-from","sales-to"].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.addEventListener("input", renderSales);
+    });
+    document.getElementById("sales-clear").addEventListener("click", ()=>{
+        document.getElementById("sales-search").value="";
+        document.getElementById("sales-from").value="";
+        document.getElementById("sales-to").value="";
+        renderSales();
+    });
+    ["scraps-search","scraps-from","scraps-to"].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.addEventListener("input", renderScraps);
+    });
+    document.getElementById("scraps-clear").addEventListener("click", ()=>{
+        document.getElementById("scraps-search").value="";
+        document.getElementById("scraps-from").value="";
+        document.getElementById("scraps-to").value="";
+        renderScraps();
+    });
+
     document.getElementById("btn-export").addEventListener("click", ()=>{
         const blob=new Blob([JSON.stringify(D,null,2)],{type:"application/json"});
         const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
@@ -2400,6 +2630,47 @@
         document.querySelector(`.tab-btn[data-view="${id}"]`).classList.add("active");
     }
 
+    // ── GRAFICI ──────────────────────────────────────
+    function renderCharts() {
+        const salesEl=document.getElementById("chart-sales");
+        const marginEl=document.getElementById("chart-margin");
+        if(!salesEl || !marginEl) return;
+
+        // Incassato per mese
+        const byMonth={};
+        D.sales.forEach(s=>{
+            const m=(s.date||"").slice(0,7); if(!m) return;
+            byMonth[m]=(byMonth[m]||0)+(s.totalPrice||0);
+        });
+        const months=Object.keys(byMonth).sort();
+        if(!months.length){
+            salesEl.innerHTML='<div style="color:var(--ink-muted);font-size:0.85rem;">Nessuna vendita registrata.</div>';
+        } else {
+            const max=Math.max.apply(null, months.map(m=>byMonth[m]));
+            salesEl.innerHTML=months.map(m=>{
+                const v=byMonth[m]; const w=max>0?(v/max*100):0;
+                const parts=m.split("-"); const label=parts[1]+"/"+parts[0].slice(2);
+                return `<div class="chart-row"><div class="chart-label">${label}</div><div class="chart-track"><div class="chart-fill" style="width:${w}%;background:var(--success);"></div></div><div class="chart-val" style="color:var(--success);">${fmt(v)}</div></div>`;
+            }).join("");
+        }
+
+        // Margine potenziale per lotto (a pieno realizzo)
+        const lots=D.ceramics.map(c=>{
+            const fullPrice=(c.subgroups||[]).reduce((a,sg)=>a+sgPrice(sg,c)*(sg.quantity||0),0);
+            return { name:c.name||"Lotto", margin: fullPrice-lotCost(c) };
+        }).sort((a,b)=>b.margin-a.margin);
+        if(!lots.length){
+            marginEl.innerHTML='<div style="color:var(--ink-muted);font-size:0.85rem;">Nessun lotto.</div>';
+        } else {
+            const max=Math.max.apply(null, [1].concat(lots.map(x=>Math.abs(x.margin))));
+            marginEl.innerHTML=lots.map(x=>{
+                const w=Math.abs(x.margin)/max*100; const pos=x.margin>=0;
+                const col=pos?"var(--success)":"var(--danger)";
+                return `<div class="chart-row"><div class="chart-label">${esc(x.name)}</div><div class="chart-track"><div class="chart-fill" style="width:${w}%;background:${col};"></div></div><div class="chart-val" style="color:${col};">${fmt(x.margin)}</div></div>`;
+            }).join("");
+        }
+    }
+
     function renderAll() {
         renderDashboard();
         renderLots();
@@ -2408,6 +2679,7 @@
         renderFirings();
         renderSettings();
         renderQuoteOptions();
+        renderCharts();
     }
 // ── PREVENTIVATORE: popola i menu ────────────────────
 function renderQuoteOptions() {
