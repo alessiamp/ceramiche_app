@@ -510,11 +510,39 @@
             border: 1px solid var(--dust);
             border-radius: var(--radius-sm);
             padding: 0.6rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .sg-row-top {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr 1fr 28px;
             gap: 0.4rem;
             align-items: center;
         }
+        .sg-status-line {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .sg-status-line label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+        .sg-status {
+            flex: 1;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid var(--dust);
+            border-radius: var(--radius-xs);
+            font-size: 0.8rem;
+            background: var(--clay-pale);
+            color: var(--ink);
+        }
+        .sg-status:focus { outline: none; border-color: var(--clay); background: white; }
         .sg-row input {
             padding: 0.5rem 0.5rem;
             border: 1px solid var(--dust);
@@ -873,6 +901,10 @@
                 <span class="filter-chip active" data-status="">Tutti</span>
                 <span class="filter-chip" data-status="In lavorazione">In lav.</span>
                 <span class="filter-chip" data-status="Da cuocere">Da cuocere</span>
+                <span class="filter-chip" data-status="In cottura">In cottura</span>
+                <span class="filter-chip" data-status="Da smaltare">Da smaltare</span>
+                <span class="filter-chip" data-status="Da cuocere (seconda)">Cuocere 2ª</span>
+                <span class="filter-chip" data-status="In cottura (seconda)">Cottura 2ª</span>
                 <span class="filter-chip" data-status="Finita">Finita</span>
                 <span class="filter-chip" data-status="Venduta">Venduta</span>
                 <span class="filter-chip" data-status="Scartata">Scartata</span>
@@ -1413,6 +1445,40 @@
     let D = {};
     let syncConfig = { token: "", gistId: "" };
 
+    // ── STATI ─────────────────────────────────────────
+    const STATUSES = [
+        "In lavorazione",
+        "Da cuocere",
+        "In cottura",
+        "Da smaltare",
+        "Da cuocere (seconda)",
+        "In cottura (seconda)",
+        "Finita",
+        "Venduta",
+        "Scartata"
+    ];
+    const STATUS_COLORS = {
+        "In lavorazione":       ["#FEF7E6","#8A6100"],
+        "Da cuocere":           ["#EAF0F8","#2C4E7A"],
+        "In cottura":           ["#FFF0E1","#B5560E"],
+        "Da smaltare":          ["#E9F5F6","#1B6E7A"],
+        "Da cuocere (seconda)": ["#E4ECF8","#1E3A6B"],
+        "In cottura (seconda)": ["#FFE7D1","#8A3E00"],
+        "Finita":               ["#E8F2EB","#3A6B4A"],
+        "Venduta":              ["#E8F5F0","#0E6655"],
+        "Scartata":             ["#FDECEA","#9B2B1A"]
+    };
+    function statusOptions(selected) {
+        return STATUSES.map(s =>
+            `<option value="${esc(s)}"${s===selected?" selected":""}>${esc(s)}</option>`
+        ).join("");
+    }
+    function statusBadge(status, tiny) {
+        const col = STATUS_COLORS[status] || ["#E8DDD4","#4A3728"];
+        const sz = tiny ? "font-size:0.6rem;padding:0.1rem 0.4rem;" : "";
+        return `<span class="badge" style="background:${col[0]};color:${col[1]};${sz}">${esc(status||"")}</span>`;
+    }
+
     function loadSyncConfig() {
         const conf = localStorage.getItem("ceraapp_sync");
         if(conf) {
@@ -1500,6 +1566,13 @@
         if(!D.ovens.some(o => /piccolo/i.test(o.name||""))) {
             D.ovens.push({id:uid("ov"), name:"Forno Piccolo", lowTempCost:35, highTempCost:70});
         }
+
+        // Migrazione: ogni sottogruppo eredita lo stato del lotto se non ne ha uno
+        (D.ceramics||[]).forEach(function(c){
+            (c.subgroups||[]).forEach(function(sg){
+                if(!sg.status) sg.status = c.status || "In lavorazione";
+            });
+        });
 
         if(syncConfig.token && syncConfig.gistId) {
             pullFromCloudSilent();
@@ -1698,7 +1771,7 @@
         document.getElementById("ds-margin").textContent = cost>0&&pot>0 ? (((pot-cost)/pot)*100).toFixed(0)+"%" : "0%";
         document.getElementById("ds-sales").textContent = fmt(sales);
 
-        const waiting = D.ceramics.filter(c=>c.status==="Da cuocere").length;
+        const waiting = D.ceramics.filter(c=>c.status==="Da cuocere"||c.status==="Da cuocere (seconda)").length;
         const banner = document.getElementById("kiln-banner");
         if(waiting>0) { banner.classList.remove("hidden"); document.getElementById("kiln-count").textContent=waiting; }
         else banner.classList.add("hidden");
@@ -1746,7 +1819,6 @@
             const thumb = c.photo
                 ? `<img src="${c.photo}" onerror="this.parentElement.innerHTML='🏺'">`
                 : `🏺`;
-            const badgeClass = "badge-" + c.status.replace(/ /g,".");
             const sgs = (c.subgroups||[]).map(sg => {
                 const uCost = unitFullCost(sg, c);
                 const uPrice = sgPrice(sg, c);
@@ -1756,6 +1828,7 @@
                     <span style="color:var(--ink-muted)"> × ${sg.quantity}</span>
                     <span style="margin-left:0.3rem;">· costo ${fmt(uCost)}/pz</span>
                     <span style="color:var(--clay-dark);font-weight:600;"> → ${fmt(uPrice)}/pz${isPriceManual?' <span title="Prezzo manuale" style="font-size:0.65rem;">✎</span>':''}</span>
+                    <span style="flex-basis:100%;margin-top:0.25rem;">${statusBadge(sg.status||c.status, true)}</span>
                 </div>`;
             }).join("");
 
@@ -1773,7 +1846,7 @@
                     <div class="lot-info">
                         <div class="lot-name">${esc(c.name)}</div>
                         <div class="lot-meta">
-                            <span class="badge ${badgeClass}">${c.status}</span>
+                            ${statusBadge(c.status)}
                             ${clay ? `<span>·</span><span>${esc(clay.name)}</span>` : ""}
                         </div>
                     </div>
@@ -1821,6 +1894,7 @@
         document.getElementById("lot-id").value = "";
         document.getElementById("lot-name").value = "";
         document.getElementById("lot-date").value = today();
+        document.getElementById("lot-status").innerHTML = statusOptions();
         document.getElementById("lot-status").value = "In lavorazione";
         document.getElementById("lot-notes").value = "";
         document.getElementById("lot-multiplier").value = "3.5";
@@ -1878,11 +1952,17 @@
             const autoPrice=c ? unitFullCost(sg,c)*(c.multiplier||3.5) : (sg.unitPrice||0);
             const displayedPrice=sg.manualPrice===true ? (sg.unitPrice||0) : autoPrice;
             return `<div class="sg-row" data-sg-id="${esc(id)}">
-                <input type="text" class="sg-type" value="${esc(sg.type)}" placeholder="Tipo">
-                <input type="number" class="sg-qty" value="${sg.quantity||1}" min="1">
-                <input type="number" class="sg-weight" value="${sg.unitWeight||0}" min="0">
-                <input type="number" class="sg-price" value="${displayedPrice||0}" min="0" step="0.5" data-manual="${sg.manualPrice===true?'1':'0'}">
-                <button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>
+                <div class="sg-row-top">
+                    <input type="text" class="sg-type" value="${esc(sg.type)}" placeholder="Tipo">
+                    <input type="number" class="sg-qty" value="${sg.quantity||1}" min="1">
+                    <input type="number" class="sg-weight" value="${sg.unitWeight||0}" min="0">
+                    <input type="number" class="sg-price" value="${displayedPrice||0}" min="0" step="0.5" data-manual="${sg.manualPrice===true?'1':'0'}">
+                    <button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>
+                </div>
+                <div class="sg-status-line">
+                    <label>Stato</label>
+                    <select class="sg-status">${statusOptions(sg.status||(c&&c.status)||"In lavorazione")}</select>
+                </div>
             </div>`;
         }).join("");
         container.querySelectorAll(".sg-price").forEach(input=>input.addEventListener("input",()=>input.dataset.manual="1"));
@@ -1893,7 +1973,7 @@
         const row=document.createElement("div");
         row.className="sg-row";
         row.dataset.sgId=uid("sg");
-        row.innerHTML=`<input type="text" class="sg-type" value="Pezzo" placeholder="Tipo"><input type="number" class="sg-qty" value="1" min="1"><input type="number" class="sg-weight" value="150" min="0"><input type="number" class="sg-price" value="0" min="0" step="0.5" data-manual="0"><button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button>`;
+        row.innerHTML=`<div class="sg-row-top"><input type="text" class="sg-type" value="Pezzo" placeholder="Tipo"><input type="number" class="sg-qty" value="1" min="1"><input type="number" class="sg-weight" value="150" min="0"><input type="number" class="sg-price" value="0" min="0" step="0.5" data-manual="0"><button type="button" class="sg-del-btn" onclick="this.closest('.sg-row').remove()">✕</button></div><div class="sg-status-line"><label>Stato</label><select class="sg-status">${statusOptions(document.getElementById("lot-status").value||"In lavorazione")}</select></div>`;
         row.querySelector(".sg-price").addEventListener("input",()=>row.querySelector(".sg-price").dataset.manual="1");
         container.appendChild(row);
     });
@@ -1944,6 +2024,7 @@
                 unitWeight:parseFloat(row.querySelector(".sg-weight").value)||0,
                 unitPrice:parseFloat(row.querySelector(".sg-price").value)||0,
                 manualPrice:row.querySelector(".sg-price").dataset.manual==="1",
+                status:(row.querySelector(".sg-status") ? row.querySelector(".sg-status").value : "") || document.getElementById("lot-status").value || "In lavorazione",
                 soldQuantity:oldSg ? (oldSg.soldQuantity||0) : 0,
                 scrappedQuantity:oldSg ? (oldSg.scrappedQuantity||0) : 0
             });
@@ -2281,7 +2362,8 @@
                     scrappedQuantity: sg.scrappedQuantity || 0,
                     unitWeight: sg.unitWeight || 0,
                     unitPrice: sg.unitPrice || 0,
-                    manualPrice: sg.manualPrice === true
+                    manualPrice: sg.manualPrice === true,
+                    status: sg.status || c.status || "In lavorazione"
                 }))
             }))
         };
